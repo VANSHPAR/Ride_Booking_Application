@@ -1,0 +1,77 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.example",
+    "module": "UberProject_EntityService",
+    "version": "0.0.1-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.2"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 21,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        {
+          "name": "UberProject_EntityService-0.0.1-SNAPSHOT-plain.jar",
+          "url": "UberProject_EntityService-0.0.1-SNAPSHOT-plain.jar",
+          "size": 13508,
+          "sha512": "27369d94929925f626ebc05a77c48eee4e79ec1373f9c3dd479e4f9d62f7c2bcecc96ac004205544e78fbbe49fc824a5b99c3e541d2678ba42d390e9185e3c32",
+          "sha256": "d9bc6fd36b4b1be28f75d6657c9063c73395e593b3caafca65e2e3658360c7f6",
+          "sha1": "d8dbdaea7e4eeb1129be98411c1bc11a78ed6e4d",
+          "md5": "a90248d7546b3ca8de85c270cdf89d54"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 21,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "org.springframework.boot",
+          "module": "spring-boot-starter-data-jpa"
+        },
+        {
+          "group": "org.flywaydb",
+          "module": "flyway-mysql",
+          "version": {
+            "requires": "10.10.0"
+          }
+        },
+        {
+          "group": "com.mysql",
+          "module": "mysql-connector-j"
+        }
+      ],
+      "files": [
+        {
+          "name": "UberProject_EntityService-0.0.1-SNAPSHOT-plain.jar",
+          "url": "UberProject_EntityService-0.0.1-SNAPSHOT-plain.jar",
+          "size": 13508,
+          "sha512": "27369d94929925f626ebc05a77c48eee4e79ec1373f9c3dd479e4f9d62f7c2bcecc96ac004205544e78fbbe49fc824a5b99c3e541d2678ba42d390e9185e3c32",
+          "sha256": "d9bc6fd36b4b1be28f75d6657c9063c73395e593b3caafca65e2e3658360c7f6",
+          "sha1": "d8dbdaea7e4eeb1129be98411c1bc11a78ed6e4d",
+          "md5": "a90248d7546b3ca8de85c270cdf89d54"
+        }
+      ]
+    }
+  ]
+}
