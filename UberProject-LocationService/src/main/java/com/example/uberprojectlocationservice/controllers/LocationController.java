@@ -8,6 +8,7 @@ import com.example.uberprojectlocationservice.service.LocationService;
 import com.example.uberprojectlocationservice.service.RedisLocationServiceimpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -26,6 +27,7 @@ public class LocationController {
        this.locationService=locationService;
     }
     @PostMapping("/drivers")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Boolean> saveDriverLocation(@RequestBody SaveDriverLocationRequestDto saveDriverLocationRequestDto) {
         try{
             Boolean response=locationService.saveDriverLocation(saveDriverLocationRequestDto.getDriverId(),saveDriverLocationRequestDto.getLatitude(),saveDriverLocationRequestDto.getLongitude());
@@ -40,6 +42,7 @@ public class LocationController {
     }
 
     @PostMapping("/nearby/drivers")
+    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
     public ResponseEntity<List<DriverLocationDto>> getNearbyDrivers(@RequestBody NearbyDriverRequestDto nearbyDriverRequestDto){
         System.out.println(nearbyDriverRequestDto.getLatitude()+" "+nearbyDriverRequestDto.getLongitude());
         try{
