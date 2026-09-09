@@ -38,6 +38,8 @@ dependencies {
 	// https://mvnrepository.com/artifact/org.flywaydb/flyway-mysql
 	implementation("org.flywaydb:flyway-mysql:10.10.0")
 
+
+
 }
 
 tasks.named('test') {

@@ -13,6 +13,7 @@ public interface DriverRepository extends JpaRepository<Driver,Long> {
 
   Optional<Driver> findByIdAndLicenseNumber(Long id, String licenseNumber);
   List<Driver> findAllByIdIn(List<Long> drivers);
+  Optional<Driver> findByEmail(String email);
 
 //  @Query(nativeQuery = true, value="Select * from Driver where id=:id and license_number=:license")
 //  //in raw sql query the name of attributes is must be same as attribute name in table,and it throws error in runime
