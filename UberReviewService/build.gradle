@@ -37,6 +37,10 @@ dependencies {
 	implementation 'com.example:UberProject_EntityService:0.0.7-SNAPSHOT'
 	// https://mvnrepository.com/artifact/org.flywaydb/flyway-mysql
 	implementation("org.flywaydb:flyway-mysql:10.10.0")
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("io.jsonwebtoken:jjwt:0.12.6")
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
 
 

@@ -8,13 +8,13 @@ import lombok.Setter;
 @Setter
 public class PassengerUpdateDto {
 
-    private String email;
+
     private String name;
 
 
 
 
-    private String phoneNumber;
+
 
 
 

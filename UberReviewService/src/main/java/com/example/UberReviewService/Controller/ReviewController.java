@@ -10,6 +10,7 @@ import com.example.uberproject_entityservice.models.Review;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +29,7 @@ public class ReviewController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('PASSENGER')")
     public ResponseEntity<?> publishReview(@RequestBody CreateReviewDto request) {
         Review r=this.createReviewDtotoReviewAdapter.convertDto(request);
         if(r==null){
@@ -47,6 +49,7 @@ public class ReviewController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
     public ResponseEntity<List<Review>> getAllReviews(){
         List<Review> reviews = this.reviewService.findAllReviews();
         return new ResponseEntity<>(reviews, HttpStatus.OK);
@@ -63,6 +66,7 @@ public class ReviewController {
     }
 
     @DeleteMapping("/{reviewId}")
+    @PreAuthorize("hasRole('PASSENGER')")
     public ResponseEntity<?> deleteReviewById(@PathVariable Long reviewId) {
         try {
             boolean isDeleted = this.reviewService.deleteReviewById(reviewId);
@@ -74,6 +78,7 @@ public class ReviewController {
     }
 
     @PutMapping("/{reviewId}")
+    @PreAuthorize("hasRole('PASSENGER')")
     public ResponseEntity<?> updateReview(@PathVariable Long reviewId, @RequestBody Review request){
         try {
             Review review = this.reviewService.updateReview(reviewId, request);

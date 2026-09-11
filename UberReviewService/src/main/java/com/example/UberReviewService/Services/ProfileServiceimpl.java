@@ -71,7 +71,7 @@ public class ProfileServiceimpl implements  ProfileService{
 
         if(driver.getRating()!=null) d.setRating(driver.getRating());
         if(driver.getActiveCity()!=null) d.setActiveCity(driver.getActiveCity());
-        if(driver.getPhoneNumber()!=null) d.setPhoneNumber(driver.getPhoneNumber());
+
         if(driver.getLicenseNumber()!=null) d.setLicenseNumber(driver.getLicenseNumber());
         if(driver.getLastKnownLocation()!=null) d.setLicenseNumber(driver.getLicenseNumber());
         if(driver.getName()!=null) d.setName(driver.getName());
@@ -83,7 +83,7 @@ public class ProfileServiceimpl implements  ProfileService{
     public Passenger updatePassenger(String email, PassengerUpdateDto passenger){
         Passenger p=passengerRepository.findByEmail(email).orElseThrow(EntityNotFoundException::new);
         if(passenger.getLastKnownLocation()!=null) p.setLastKnownLocation(passenger.getLastKnownLocation());
-        if(passenger.getPhoneNumber()!=null) p.setPhoneNumber(passenger.getPhoneNumber());
+
         if(passenger.getRating()!=null) p.setRating(passenger.getRating());
         if(passenger.getHome()!=null)p.setHome(passenger.getHome());
         if(passenger.getName()!=null) p.setName(passenger.getName());

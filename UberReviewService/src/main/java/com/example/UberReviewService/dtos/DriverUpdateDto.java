@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class DriverUpdateDto {
-    private String email;
+
     private  String name;
 
 
@@ -19,7 +19,7 @@ public class DriverUpdateDto {
     private String licenseNumber;
 
 
-    private String phoneNumber;
+
 
 
     private ExactLocation lastKnownLocation;

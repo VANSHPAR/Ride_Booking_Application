@@ -10,6 +10,8 @@ import com.example.uberproject_entityservice.models.Review;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.StreamingHttpOutputMessage;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,9 +29,11 @@ public class ProfileController {
     }
 
     @GetMapping("/passenger")
-    public ResponseEntity<?> findPassengerByEmail(@RequestBody Simplebody simplebody){
+    @PreAuthorize("hasRole('PASSENGER')")
+    public ResponseEntity<?> findPassengerByEmail(Authentication authentication){
+        String email=authentication.getName();
         try {
-            Optional<Passenger> review = this.profileService.findPassengerByEmail(simplebody.getEmail());
+            Optional<Passenger> review = this.profileService.findPassengerByEmail(email);
             return new ResponseEntity<>(review, HttpStatus.OK);
         }catch (Exception e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -37,9 +41,11 @@ public class ProfileController {
     }
 
     @GetMapping("/driver")
-    public ResponseEntity<?> findDriverByEmail(@RequestBody Simplebody simplebody){
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<?> findDriverByEmail(Authentication authentication){
+        String email=authentication.getName();
         try {
-            Optional<Driver> review = this.profileService.findDriverByEmail(simplebody.getEmail());
+            Optional<Driver> review = this.profileService.findDriverByEmail(email);
             return new ResponseEntity<>(review, HttpStatus.OK);
         }catch (Exception e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -47,13 +53,17 @@ public class ProfileController {
     }
 
     @PutMapping("/passenger")
-    public ResponseEntity<?> updatePassenger(@RequestBody PassengerUpdateDto passengerUpdateDto){
-        return new ResponseEntity<>(profileService.updatePassenger(passengerUpdateDto.getEmail(),passengerUpdateDto),HttpStatus.OK);
+    @PreAuthorize("hasRole('PASSENGER')")
+    public ResponseEntity<?> updatePassenger(Authentication authentication,PassengerUpdateDto passengerUpdateDto){
+        String email=authentication.getName();
+        return new ResponseEntity<>(profileService.updatePassenger(email,passengerUpdateDto),HttpStatus.OK);
     }
 
     @PutMapping("/driver")
-    public ResponseEntity<?> updateDriver(@RequestBody DriverUpdateDto driverUpdateDto){
-        return new ResponseEntity<>(profileService.updateDriver(driverUpdateDto.getEmail(),driverUpdateDto),HttpStatus.OK);
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<?> updateDriver(Authentication authentication,@RequestBody DriverUpdateDto driverUpdateDto){
+        String email=authentication.getName();
+        return new ResponseEntity<>(profileService.updateDriver(email,driverUpdateDto),HttpStatus.OK);
     }
     
 }
