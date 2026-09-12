@@ -6,6 +6,7 @@ import com.example.uberbookingservice.Repositories.PassengerRepository;
 import com.example.uberbookingservice.apis.LocationServiceApi;
 import com.example.uberbookingservice.apis.UberSocketApi;
 import com.example.uberbookingservice.dto.*;
+import com.example.uberbookingservice.dto.BookingResponseDto;
 import com.example.uberproject_entityservice.models.Booking;
 import com.example.uberproject_entityservice.models.BookingStatus;
 import com.example.uberproject_entityservice.models.Driver;
@@ -162,6 +163,59 @@ public class BookingServiceimpl implements BookingService{
             }
         });
 
-
            }
+
+
+    @Override
+    public List<BookingResponseDto> getPassengerBookings(String passengerEmail) {
+        List<Booking> bookings =bookingRepository.getByPassengerEmail(passengerEmail);
+
+        return bookings.stream()
+                .map(booking -> BookingResponseDto.builder()
+                        .bookingId(booking.getId())
+                        .bookingStatus(booking.getBookingStatus())
+                        .startLocation(booking.getStartLocation())
+                        .endLocation(booking.getEndLocation())
+                        .driverId(booking.getDriver() != null ? booking.getDriver().getId() : null)
+                        .totalDistance(booking.getTotalDistance())
+                        .startTime(booking.getStartTime())
+                        .endTime(booking.getEndTime())
+                        .build())
+                .toList();
+    }
+    @Override
+    public List<DriverBookingResponseDto> getDriverBookings(String driverEmail){
+        List<Booking> bookings=bookingRepository.getByDriverEmail(driverEmail);
+
+        return bookings.stream()
+                .map(booking -> DriverBookingResponseDto.builder()
+                        .bookingId(booking.getId())
+                        .bookingStatus(booking.getBookingStatus())
+                        .startLocation(booking.getStartLocation())
+                        .endLocation(booking.getEndLocation())
+                        .passengerId(booking.getPassenger()!=null ? booking.getPassenger().getId() : null)
+                        .totalDistance(booking.getTotalDistance())
+                        .startTime(booking.getStartTime())
+                        .endTime(booking.getEndTime())
+                        .build()).toList();
+
+
+    }
+    @Override
+    public UpdateBookingResponseDto cancelBooking(Long bookingId,String passengerEmail){
+        Booking booking=bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found."));
+
+        if(!booking.getPassenger().getEmail().equals(passengerEmail)) {
+            throw  new RuntimeException("Not allowed");
+        }
+        if(booking.getBookingStatus()==BookingStatus.ASSIGNING_DRIVER || booking.getBookingStatus()==BookingStatus.SCHEDULED || booking.getBookingStatus()==BookingStatus.CAB_ARRIVED){
+            booking.setBookingStatus(BookingStatus.CANCELLED);
+            Booking saveBooking=bookingRepository.save(booking);
+            return UpdateBookingResponseDto.builder().bookingId(saveBooking.getId()).bookingStatus(saveBooking.getBookingStatus()).driverId(Optional.ofNullable(saveBooking.getDriver().getId())).build();
+        }
+        else throw new RuntimeException("You can't cancel booking.");
+    }
 }
+
+

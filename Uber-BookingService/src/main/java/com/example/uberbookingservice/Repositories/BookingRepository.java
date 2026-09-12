@@ -21,4 +21,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
    void updateBookingStatusAndDriverById(@Param("id") Long id, @Param("status") BookingStatus status, @Param("driver") Driver driver);
 
      List<Booking> getByPassengerEmail(String email);
+
+     List<Booking> getByDriverEmail(String email);
 }
