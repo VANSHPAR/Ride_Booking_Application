@@ -48,7 +48,10 @@ public class DriverRequestController {
 
     public void sendDriversNewRideRequest(  RideRequestDto  rideRequestDto) {
        System.out.println("Executed periodic function");
-        simpMessagingTemplate.convertAndSend("/topic/rideRequest",rideRequestDto);
+       for(Long driverId:rideRequestDto.getDriverIds()){
+           simpMessagingTemplate.convertAndSend("/topic/rideRequest/"+driverId,rideRequestDto);
+
+       }
 
 
     }
@@ -60,7 +63,10 @@ public class DriverRequestController {
     public synchronized  void rideResponseHandler(@DestinationVariable String userId, RideResponseDto rideResponseDto) {
 
         System.out.println(rideResponseDto.getResponse()+" "+userId);
-
+        if(!rideResponseDto.getResponse()){
+            System.out.println("driver rejected ride");
+            return;
+        }
         UpdateBookingRequestDto updateBookingRequestDto=UpdateBookingRequestDto.builder()
                 .driverId(Optional.of(Long.parseLong(userId)))
                 .bookingStatus(BookingStatus.valueOf("SCHEDULED"))

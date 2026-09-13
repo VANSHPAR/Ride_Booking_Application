@@ -18,4 +18,5 @@ public class RideRequestDto {
     private List<Long> driverIds;
 
     private Long bookingId;
+
 }

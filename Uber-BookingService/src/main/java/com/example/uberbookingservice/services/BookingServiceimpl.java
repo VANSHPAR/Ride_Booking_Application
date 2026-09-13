@@ -98,6 +98,9 @@ public class BookingServiceimpl implements BookingService{
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NoSuchElementException("Booking not found with id: " + bookingId));
+        if(booking.getBookingStatus()==BookingStatus.SCHEDULED) {
+            throw new RuntimeException("Booking is already SCHEDULED.");
+        }
 
         bookingRepository.updateBookingStatusAndDriverById(
                 bookingId, BookingStatus.SCHEDULED, driver);
@@ -121,11 +124,15 @@ public class BookingServiceimpl implements BookingService{
                 System.out.println(Arrays.toString(response.body()));
             if(response.isSuccessful() && response.body()!=null){
             List<DriverLocationDto> driverLocations= Arrays.asList(response.body());
-            driverLocations.forEach(driverLocationDto->{
-                System.out.println(driverLocationDto.getDriverId()+" "+driverLocationDto.getLatitude()+" "+driverLocationDto.getLongitude());
-            });
+//            driverLocations.forEach(driverLocationDto->{
+//                System.out.println(driverLocationDto.getDriverId()+" "+driverLocationDto.getLatitude()+" "+driverLocationDto.getLongitude());
+//            });
+                List<Long> driverIds=driverLocations.stream()
+                        .map(DriverLocationDto::getDriverId)
+                        .map(Long::parseLong).toList();
                 try {
-                    raiseRideRequestAsync(RideRequestDto.builder().passengerId(passengerId).bookingId(bookingId).build());
+//                    raiseRideRequestAsync(RideRequestDto.builder().passengerId(passengerId).bookingId(bookingId).build());
+                    raiseRideRequestAsync(RideRequestDto.builder().passengerId(passengerId).bookingId(bookingId).driverIds(driverIds).build());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
