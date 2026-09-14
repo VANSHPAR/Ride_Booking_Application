@@ -1,6 +1,7 @@
 package com.example.UberReviewService.Controller;
 
 import com.example.UberReviewService.Services.ProfileService;
+import com.example.UberReviewService.dtos.DriverAvailabilityDto;
 import com.example.UberReviewService.dtos.DriverUpdateDto;
 import com.example.UberReviewService.dtos.PassengerUpdateDto;
 import com.example.UberReviewService.dtos.Simplebody;
@@ -64,6 +65,14 @@ public class ProfileController {
     public ResponseEntity<?> updateDriver(Authentication authentication,@RequestBody DriverUpdateDto driverUpdateDto){
         String email=authentication.getName();
         return new ResponseEntity<>(profileService.updateDriver(email,driverUpdateDto),HttpStatus.OK);
+    }
+
+    @PutMapping("/driver/availability")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<String> updateAvailability(Authentication authentication, @RequestBody DriverAvailabilityDto driverAvailabilityDto){
+        String email=authentication.getName();
+        profileService.updateAvailability(email,driverAvailabilityDto);
+        return  new ResponseEntity<>("Your Availability Changed",HttpStatus.OK);
     }
     
 }

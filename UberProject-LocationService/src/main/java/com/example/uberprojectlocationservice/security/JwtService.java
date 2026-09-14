@@ -2,7 +2,7 @@ package com.example.uberprojectlocationservice.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
+import java.nio.charset.StandardCharsets;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -50,10 +50,7 @@ public class JwtService  {
     }
 
     public Key getSignKey(){
-
-        byte[] bytes= Decoders.BASE64.decode(SECRET);
-
-        return Keys.hmacShaKeyFor(bytes);
+        return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
     }
 
     public Boolean validateToken(String token,String email) {
@@ -65,6 +62,7 @@ public class JwtService  {
         Claims claims = getAllPayloads(token);
         String ph=claims.get("phoneNumber", String.class);
         return ph;
+
     }
 
 //    @Override

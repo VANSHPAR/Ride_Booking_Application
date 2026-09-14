@@ -1,0 +1,13 @@
+﻿@import 'tailwindcss';
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+

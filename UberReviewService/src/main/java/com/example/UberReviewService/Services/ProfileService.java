@@ -1,5 +1,6 @@
 package com.example.UberReviewService.Services;
 
+import com.example.UberReviewService.dtos.DriverAvailabilityDto;
 import com.example.UberReviewService.dtos.DriverUpdateDto;
 import com.example.UberReviewService.dtos.PassengerUpdateDto;
 import com.example.uberproject_entityservice.models.Driver;
@@ -17,4 +18,7 @@ public interface ProfileService {
    public Passenger updatePassenger(String email, PassengerUpdateDto passenger);
 
    public  Driver updateDriver(String email, DriverUpdateDto driver);
+
+   public void updateAvailability(String email, DriverAvailabilityDto driverAvailabilityDto);
+
 }

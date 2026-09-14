@@ -44,13 +44,20 @@ public class RedisLocationServiceimpl implements LocationService{
         GeoResults<RedisGeoCommands.GeoLocation<String>> results=geoOps.radius(DRIVER_GEO_OPS_KEY,within); //this finds driver in circle within
         List<DriverLocationDto> drivers=new ArrayList<>();
 
+        if (results == null) {
+            return drivers;
+        }
+
         for(GeoResult<RedisGeoCommands.GeoLocation<String>> res:results){
-            Point point=geoOps.position(DRIVER_GEO_OPS_KEY,res.getContent().getName()).get(0);
-            DriverLocationDto driverLocation=DriverLocationDto.builder()
-                    .driverId(res.getContent().getName())
-                    .latitude(point.getX())
-                    .longitude(point.getY()).build();
-            drivers.add(driverLocation);
+            List<Point> points = geoOps.position(DRIVER_GEO_OPS_KEY, res.getContent().getName());
+            if (points != null && !points.isEmpty() && points.get(0) != null) {
+                Point point = points.get(0);
+                DriverLocationDto driverLocation=DriverLocationDto.builder()
+                        .driverId(res.getContent().getName())
+                        .latitude(point.getX())
+                        .longitude(point.getY()).build();
+                drivers.add(driverLocation);
+            }
         }
         return drivers;
     }

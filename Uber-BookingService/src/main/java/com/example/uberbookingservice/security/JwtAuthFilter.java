@@ -52,7 +52,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             if (jwtService.validateToken(token, email)) {
                 //Usernamepasswordauthenticationtoken class :-An authentication that is designed for simple presentation of username and passwd
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+                String authorityName = (role != null && role.startsWith("ROLE_")) ? role : "ROLE_" + role;
+                SimpleGrantedAuthority authority = new SimpleGrantedAuthority(authorityName);
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(email, null, List.of(authority));
 
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);

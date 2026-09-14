@@ -17,7 +17,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-public class SecurityConfig  implements WebMvcConfigurer {
+public class SecurityConfig {
 
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
@@ -48,17 +48,5 @@ public class SecurityConfig  implements WebMvcConfigurer {
     }
     // AuthenticationProvider provides different authentication schemes to be plugable in our application
     //AuthenticationProvider processes an authentication request and return authenticated obj..
-
-
-
-    @Override
-    public void addCorsMappings(CorsRegistry corsRegistry){
-        corsRegistry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173")
-                .allowedHeaders("*")
-                .allowCredentials(true)
-                .allowedOriginPatterns("*")
-                .allowedMethods("POST", "GET", "PUT", "DELETE", "OPTIONS");
-    }
 }
 

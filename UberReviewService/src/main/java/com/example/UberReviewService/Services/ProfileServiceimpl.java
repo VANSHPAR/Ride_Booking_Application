@@ -2,6 +2,7 @@ package com.example.UberReviewService.Services;
 
 import com.example.UberReviewService.Repositories.DriverRepository;
 import com.example.UberReviewService.Repositories.PassengerRepository;
+import com.example.UberReviewService.dtos.DriverAvailabilityDto;
 import com.example.UberReviewService.dtos.DriverUpdateDto;
 import com.example.UberReviewService.dtos.PassengerUpdateDto;
 import com.example.uberproject_entityservice.models.Driver;
@@ -71,7 +72,6 @@ public class ProfileServiceimpl implements  ProfileService{
 
         if(driver.getRating()!=null) d.setRating(driver.getRating());
         if(driver.getActiveCity()!=null) d.setActiveCity(driver.getActiveCity());
-
         if(driver.getLicenseNumber()!=null) d.setLicenseNumber(driver.getLicenseNumber());
         if(driver.getLastKnownLocation()!=null) d.setLicenseNumber(driver.getLicenseNumber());
         if(driver.getName()!=null) d.setName(driver.getName());
@@ -88,5 +88,13 @@ public class ProfileServiceimpl implements  ProfileService{
         if(passenger.getHome()!=null)p.setHome(passenger.getHome());
         if(passenger.getName()!=null) p.setName(passenger.getName());
         return  passengerRepository.save(p);
+    }
+    @Override
+    public void updateAvailability(String email, DriverAvailabilityDto driverAvailabilityDto){
+        Driver d=driverRepository.findByEmail(email). orElseThrow(EntityNotFoundException::new);
+        if(driverAvailabilityDto.isAvailable) d.setAvailable(Boolean.TRUE);
+
+        else d.setAvailable(Boolean.FALSE);
+
     }
 }

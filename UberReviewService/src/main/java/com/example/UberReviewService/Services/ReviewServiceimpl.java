@@ -2,6 +2,7 @@ package com.example.UberReviewService.Services;
 
 import com.example.UberReviewService.Repositories.ReviewRepository;
 
+import com.example.UberReviewService.dtos.DriverAvailabilityDto;
 import com.example.uberproject_entityservice.models.Review;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -72,5 +73,6 @@ public class ReviewServiceimpl implements ReviewService{
         }
         return this.reviewRepository.save(review);
     }
+
         }
 

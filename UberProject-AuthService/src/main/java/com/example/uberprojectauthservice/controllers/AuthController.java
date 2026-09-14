@@ -110,4 +110,16 @@ public class AuthController {
         }
         return new  ResponseEntity<>("Success",HttpStatus.OK);
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpServletResponse response){
+        ResponseCookie cookie=ResponseCookie.from("jwt","")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        return  ResponseEntity.ok("Logout Successful");
+    }
 }
