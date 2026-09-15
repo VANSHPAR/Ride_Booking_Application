@@ -11,16 +11,16 @@ import "leaflet/dist/leaflet.css";
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl:       "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl:     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
 export default function DriverDashboard() {
   const { user, login } = useAuth();
-  const [online, setOnline]           = useState(false);
-  const [location, setLocation]       = useState(null);
+  const [online, setOnline] = useState(false);
+  const [location, setLocation] = useState(null);
   const [rideRequest, setRideRequest] = useState(null);
-  const [status, setStatus]           = useState("Offline");
+  const [status, setStatus] = useState("Offline");
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -36,6 +36,7 @@ export default function DriverDashboard() {
   }, []);
 
   const { sendRideResponse } = useWebSocket({
+    driverId: user?.id,
     enabled: online,
     onRideRequest: (data) => {
       setRideRequest(data);

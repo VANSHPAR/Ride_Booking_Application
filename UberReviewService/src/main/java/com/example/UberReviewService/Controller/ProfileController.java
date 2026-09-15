@@ -33,11 +33,11 @@ public class ProfileController {
     @PreAuthorize("hasRole('PASSENGER')")
     public ResponseEntity<?> findPassengerByEmail(Authentication authentication){
         String email=authentication.getName();
-        try {
-            Optional<Passenger> review = this.profileService.findPassengerByEmail(email);
-            return new ResponseEntity<>(review, HttpStatus.OK);
-        }catch (Exception e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+       Optional<Passenger> passenger=this.profileService.findPassengerByEmail(email);
+        if (passenger.isPresent()) {
+            return new ResponseEntity<>(passenger.get(), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("Passenger not found", HttpStatus.NOT_FOUND);
         }
     }
 

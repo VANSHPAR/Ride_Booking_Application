@@ -35,7 +35,7 @@ public class SecurityConfig {
                         auth -> auth
 
                                 .requestMatchers(HttpMethod.POST,"/api/location/drivers").hasRole("DRIVER")
-                                .requestMatchers(HttpMethod.POST,"/api/location/nearby/drivers").hasAnyRole("PASSENGER","DRIVER")
+                                .requestMatchers(HttpMethod.POST,"/api/location/nearby/drivers").permitAll()
                                 .anyRequest()
                                 .authenticated()
 

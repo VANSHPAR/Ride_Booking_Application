@@ -41,8 +41,9 @@ public class SecurityConfig  implements WebMvcConfigurer {
         return http.authorizeHttpRequests(
                         auth -> auth
 
-                                .requestMatchers("/api/v1/booking").hasRole("PASSENGER")
-                                .requestMatchers("/api/v1/booking/**").hasAnyRole("PASSENGER","DRIVER")
+                                .requestMatchers("/api/v1/booking","/api/v1/booking/passenger/**").hasRole("PASSENGER")
+                                .requestMatchers("/api/v1/booking/driver/**").hasRole("DRIVER")
+                                .requestMatchers("/api/v1/booking/**").hasAnyRole("PASSENGER", "DRIVER")
                                 .anyRequest()
                                 .authenticated()
 
@@ -58,14 +59,14 @@ public class SecurityConfig  implements WebMvcConfigurer {
 
 
 
-    @Override
-    public void addCorsMappings(CorsRegistry corsRegistry){
-        corsRegistry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173")
-                .allowedHeaders("*")
-                .allowCredentials(true)
-                .allowedOriginPatterns("*")
-                .allowedMethods("POST", "GET", "PUT", "DELETE", "OPTIONS");
-    }
+//    @Override
+//    public void addCorsMappings(CorsRegistry corsRegistry){
+//        corsRegistry.addMapping("/**")
+//                .allowedOrigins("http://localhost:5173")
+//                .allowedHeaders("*")
+//                .allowCredentials(true)
+//                .allowedOriginPatterns("*")
+//                .allowedMethods("POST", "GET", "PUT", "DELETE", "OPTIONS");
+//    }
 }
 

@@ -56,14 +56,14 @@ public class SecurityConfig  implements WebMvcConfigurer {
 
 
 
-    @Override
-    public void addCorsMappings(CorsRegistry corsRegistry){
-        corsRegistry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173")
-                .allowedHeaders("*")
-                .allowCredentials(true)
-                .allowedOriginPatterns("*")
-                .allowedMethods("POST", "GET", "PUT", "DELETE", "OPTIONS");
-    }
+//    @Override
+//    public void addCorsMappings(CorsRegistry corsRegistry){
+//        corsRegistry.addMapping("/**")
+//                .allowedOrigins("http://localhost:5173")
+//                .allowedHeaders("*")
+//                .allowCredentials(true)
+//                .allowedOriginPatterns("*")
+//                .allowedMethods("POST", "GET", "PUT", "DELETE", "OPTIONS");
+//    }
 }
 

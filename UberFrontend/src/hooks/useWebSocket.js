@@ -19,7 +19,7 @@ export function useWebSocket({ onRideRequest, enabled = true }) {
       reconnectDelay: 5000,
       onConnect: () => {
         console.log("WebSocket connected to:", SOCKET_URL);
-        client.subscribe("/topic/rideRequest", (message) => {
+        client.subscribe("/topic/rideRequest/${driverId}", (message) => {
           try {
             const data = JSON.parse(message.body);
             onRideRequestRef.current?.(data);
