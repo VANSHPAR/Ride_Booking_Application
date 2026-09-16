@@ -2,16 +2,13 @@
 import { Client } from "@stomp/stompjs";
 import { SOCKET_URL } from "../services/api";
 
-// SockJS is loaded as a global from CDN in index.html
-// @stomp/stompjs accepts a webSocketFactory that returns a SockJS instance
-
-export function useWebSocket({ onRideRequest, enabled = true }) {
+export function useWebSocket({ driverId, onRideRequest, enabled = true }) {
   const clientRef = useRef(null);
   const onRideRequestRef = useRef(onRideRequest);
   onRideRequestRef.current = onRideRequest;
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !driverId) return;
 
     const client = new Client({
       // eslint-disable-next-line no-undef
@@ -19,7 +16,7 @@ export function useWebSocket({ onRideRequest, enabled = true }) {
       reconnectDelay: 5000,
       onConnect: () => {
         console.log("WebSocket connected to:", SOCKET_URL);
-        client.subscribe("/topic/rideRequest/${driverId}", (message) => {
+        client.subscribe(`/topic/rideRequest/${driverId}`, (message) => {
           try {
             const data = JSON.parse(message.body);
             onRideRequestRef.current?.(data);
@@ -43,7 +40,7 @@ export function useWebSocket({ onRideRequest, enabled = true }) {
       client.deactivate();
       clientRef.current = null;
     };
-  }, [enabled]);
+  }, [enabled, driverId]);
 
   const sendRideResponse = (driverId, response) => {
     if (clientRef.current?.connected) {

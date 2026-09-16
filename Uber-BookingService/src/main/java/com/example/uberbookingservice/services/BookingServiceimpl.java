@@ -54,7 +54,7 @@ public class BookingServiceimpl implements BookingService{
     }
 
     @Override
-    public CreateBookingResponseDto createBooking(CreateBooikngDto createBooikngDto) {
+    public CreateBookingResponseDto createBooking(CreateBooikngDto createBooikngDto,String jwtToken) {
         Optional<Passenger> passenger=passengerRepository.findById(createBooikngDto.getPassengerId());
         Booking  booking = Booking.builder()
                 .bookingStatus(BookingStatus.ASSIGNING_DRIVER)
@@ -69,7 +69,7 @@ public class BookingServiceimpl implements BookingService{
                 .longitude(createBooikngDto.getStartLocation().getLongitude())
                 .build();
         System.out.println(request.getLatitude()+" "+request.getLongitude());
-        processNearByDriversAsync(request,createBooikngDto.getPassengerId(),newBooking.getId());
+        processNearByDriversAsync(request,createBooikngDto.getPassengerId(),newBooking.getId(),jwtToken);
 
 //
 //        ResponseEntity<DriverLocationDto[]> result = restTemplate.postForEntity(LOCATION_SERVICE+"/api/location/nearby/drivers",request,DriverLocationDto[].class);
@@ -114,8 +114,9 @@ public class BookingServiceimpl implements BookingService{
 
     }
 
-    private void processNearByDriversAsync(NearbyDriverRequestDto requestDto,Long passengerId,Long bookingId) {
-        Call<DriverLocationDto[]> call=locationServiceApi.getNearbyDrivers(requestDto);
+    private void processNearByDriversAsync(NearbyDriverRequestDto requestDto,Long passengerId,Long bookingId,String jwtToken) {
+        String cookieHeader = "jwtToken=" + jwtToken;
+        Call<DriverLocationDto[]> call=locationServiceApi.getNearbyDrivers(cookieHeader,requestDto);
 
         System.out.println(call.request().url() + " " + call.request().method() + " " + call.request().headers());
         call.enqueue(new  Callback<DriverLocationDto[]>() {
@@ -132,7 +133,7 @@ public class BookingServiceimpl implements BookingService{
                         .map(Long::parseLong).toList();
                 try {
 //                    raiseRideRequestAsync(RideRequestDto.builder().passengerId(passengerId).bookingId(bookingId).build());
-                    raiseRideRequestAsync(RideRequestDto.builder().passengerId(passengerId).bookingId(bookingId).driverIds(driverIds).build());
+                    raiseRideRequestAsync(RideRequestDto.builder().passengerId(passengerId).bookingId(bookingId).driverIds(driverIds).build(),jwtToken);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -147,8 +148,9 @@ public class BookingServiceimpl implements BookingService{
         });
     }
 
-           private void raiseRideRequestAsync(RideRequestDto rideRequestDto) throws Exception {
-        Call<Boolean> call=uberSocketApi.raiseRideRequest(rideRequestDto);
+           private void raiseRideRequestAsync(RideRequestDto rideRequestDto,String jwtToken) throws Exception {
+               String cookieHeader = "jwtToken=" + jwtToken;
+        Call<Boolean> call=uberSocketApi.raiseRideRequest(cookieHeader,rideRequestDto);
                System.out.println(call.request().url() + " " + call.request().method() + " " + call.request().headers());
         call.enqueue(new Callback<>() {
             @Override

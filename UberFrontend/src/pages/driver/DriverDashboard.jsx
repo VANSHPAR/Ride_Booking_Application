@@ -85,7 +85,7 @@ export default function DriverDashboard() {
 
   const handleAccept = () => {
     if (!rideRequest) return;
-    sendRideResponse(user.id || 1, { response: "ACCEPT", bookingId: rideRequest.bookingId });
+    sendRideResponse(user.id || 1, { response: "true", bookingId: rideRequest.bookingId });
     toast.success("Ride accepted! Head to pickup location.");
     setRideRequest(null);
     setStatus("Heading to passenger...");
@@ -93,7 +93,7 @@ export default function DriverDashboard() {
 
   const handleReject = () => {
     if (!rideRequest) return;
-    sendRideResponse(user.id || 1, { response: "REJECT", bookingId: rideRequest.bookingId });
+    sendRideResponse(user.id || 1, { response: "false", bookingId: rideRequest.bookingId });
     setRideRequest(null);
     setStatus("Online — waiting for rides");
     toast.info("Ride rejected");

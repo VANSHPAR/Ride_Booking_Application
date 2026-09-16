@@ -14,7 +14,7 @@ export default function DriverLogin() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signinDriver(form);
+      const res = await signinDriver(form);
       login({ email: form.email, role: "DRIVER", name: form.email.split("@")[0] });
       toast.success("Welcome back, Driver!");
       navigate("/driver/dashboard");

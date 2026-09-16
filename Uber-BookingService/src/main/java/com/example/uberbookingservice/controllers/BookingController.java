@@ -2,6 +2,8 @@ package com.example.uberbookingservice.controllers;
 
 import com.example.uberbookingservice.dto.*;
 import com.example.uberbookingservice.services.BookingService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,13 +25,20 @@ public class BookingController {
 
     @PostMapping
     @PreAuthorize("hasRole('PASSENGER')")
-    public ResponseEntity<CreateBookingResponseDto> createBooking(@RequestBody CreateBooikngDto createBooikngDto) throws IOException {
-
-        return new ResponseEntity<>(bookingService.createBooking(createBooikngDto), HttpStatus.CREATED);
+    public ResponseEntity<CreateBookingResponseDto> createBooking(@RequestBody CreateBooikngDto createBooikngDto, HttpServletRequest request) throws IOException {
+        String token = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (cookie.getName().equals("jwtToken")) {
+                    token = cookie.getValue();
+                }
+            }
+        }
+        return new ResponseEntity<>(bookingService.createBooking(createBooikngDto,token), HttpStatus.CREATED);
     }
 
     @PostMapping("/{bookingId}")
-    @PreAuthorize("hasRole('PASSENGER')")
+    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
     public ResponseEntity<UpdateBookingResponseDto> updateBooking(@RequestBody UpdateBookingRequestDto updateBookingRequestDto, @PathVariable Long bookingId) {
 
         return new ResponseEntity<>(bookingService.updateBooking(updateBookingRequestDto,bookingId),HttpStatus.OK);

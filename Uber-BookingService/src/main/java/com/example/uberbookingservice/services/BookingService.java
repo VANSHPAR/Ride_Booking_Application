@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface BookingService {
 
-    public CreateBookingResponseDto createBooking(CreateBooikngDto createBooikngDto);
+    public CreateBookingResponseDto createBooking(CreateBooikngDto createBooikngDto,String jwtToken);
 
     public UpdateBookingResponseDto updateBooking(UpdateBookingRequestDto updateBookingRequestDto,Long bookingId);
 

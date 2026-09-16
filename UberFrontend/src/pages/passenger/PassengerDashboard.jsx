@@ -60,7 +60,7 @@ export default function PassengerDashboard() {
     setLoading(true);
     try {
       const payload = {
-        passengerId: user.id || 1,
+        passengerId: user.id ,
         startLocation: pickup,
         endLocation: dropoff || pickup,
       };

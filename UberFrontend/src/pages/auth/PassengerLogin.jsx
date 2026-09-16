@@ -14,8 +14,8 @@ export default function PassengerLogin() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signinPassenger(form);
-      login({ email: form.email, role: "PASSENGER", name: form.email.split("@")[0] });
+      const res = await signinPassenger(form);
+      login({ id: res.data?.id, email: form.email, role: "PASSENGER", name: form.email.split("@")[0] });
       toast.success("Welcome back!");
       navigate("/passenger/dashboard");
     } catch (err) {

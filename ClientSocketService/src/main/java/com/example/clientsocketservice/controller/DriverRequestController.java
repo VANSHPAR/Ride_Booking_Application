@@ -8,10 +8,13 @@ import com.example.clientsocketservice.dto.UpdateBookingResponseDto;
 import com.example.clientsocketservice.producers.KafkaProducerService;
 import com.example.uberproject_entityservice.models.BookingStatus;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -60,22 +63,32 @@ public class DriverRequestController {
 
 
     @MessageMapping("/rideResponse/{userId}")
-    public synchronized  void rideResponseHandler(@DestinationVariable String userId, RideResponseDto rideResponseDto) {
+    public synchronized  void rideResponseHandler(@DestinationVariable String userId, RideResponseDto rideResponseDto, SimpMessageHeaderAccessor headerAccessor) {
 
         System.out.println(rideResponseDto.getResponse()+" "+userId);
         if(!rideResponseDto.getResponse()){
             System.out.println("driver rejected ride");
             return;
         }
+        String jwtToken = null;
+        if (headerAccessor.getSessionAttributes() != null) {
+            jwtToken = (String) headerAccessor.getSessionAttributes().get("jwtToken");
+        }
         UpdateBookingRequestDto updateBookingRequestDto=UpdateBookingRequestDto.builder()
                 .driverId(Optional.of(Long.parseLong(userId)))
                 .bookingStatus(BookingStatus.valueOf("SCHEDULED"))
                 .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        if (jwtToken != null) {
+            headers.add(HttpHeaders.COOKIE, "jwtToken=" + jwtToken);
+        }
+        HttpEntity<UpdateBookingRequestDto> httpEntity = new HttpEntity<>(updateBookingRequestDto, headers);
         System.out.println("Here fail 1");
         System.out.println("rideResponseDto.bookingId = " + rideResponseDto.getBookingId());
         System.out.println("rideResponseDto.response = " + rideResponseDto.getResponse());
 
-        ResponseEntity<UpdateBookingResponseDto> result=this.restTemplate.postForEntity("http://localhost:7464/api/v1/booking/"+rideResponseDto.bookingId,updateBookingRequestDto,UpdateBookingResponseDto.class);
+        ResponseEntity<UpdateBookingResponseDto> result=this.restTemplate.postForEntity("http://localhost:7464/api/v1/booking/"+rideResponseDto.bookingId,httpEntity,UpdateBookingResponseDto.class);
         System.out.println("Here fail 1");
         kafkaProducerService.publishMessage("sample-topic","Hello World");
         System.out.println(result.getStatusCode());
