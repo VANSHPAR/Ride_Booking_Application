@@ -1,4 +1,4 @@
-﻿@import 'tailwindcss';
+@import 'tailwindcss';
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -9,5 +9,10 @@ body {
 .leaflet-container {
   width: 100%;
   height: 100%;
+}
+
+.custom-map-icon {
+  background: transparent !important;
+  border: none !important;
 }
 

@@ -1,4 +1,4 @@
-﻿const STATUS_COLORS = {
+const STATUS_COLORS = {
   ASSIGNING_DRIVER: "bg-yellow-100 text-yellow-800",
   SCHEDULED:        "bg-blue-100 text-blue-800",
   IN_PROGRESS:      "bg-green-100 text-green-800",
@@ -24,6 +24,7 @@ export default function BookingCard({ booking }) {
           <p>🏁 End: {booking.endLocation.latitude?.toFixed(4)}, {booking.endLocation.longitude?.toFixed(4)}</p>
         )}
         {booking.driverId && <p>🚗 Driver ID: {booking.driverId}</p>}
+        {booking.passengerId && <p>👤 Passenger ID: {booking.passengerId}</p>}
         {booking.totalDistance && <p>📏 Distance: {booking.totalDistance} km</p>}
         {booking.startTime && <p>🕐 Start: {new Date(booking.startTime).toLocaleString()}</p>}
         {booking.endTime   && <p>🕑 End: {new Date(booking.endTime).toLocaleString()}</p>}

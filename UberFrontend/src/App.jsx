@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthProvider } from "./context/AuthContext";
@@ -19,6 +19,7 @@ import Reviews            from "./pages/passenger/Reviews";
 
 import DriverDashboard from "./pages/driver/DriverDashboard";
 import DriverProfile   from "./pages/driver/DriverProfile";
+import DriverBookings  from "./pages/driver/DriverBookings";
 
 export default function App() {
   return (
@@ -48,6 +49,8 @@ export default function App() {
               {/* Driver protected */}
               <Route path="/driver/dashboard"
                 element={<ProtectedRoute role="DRIVER"><DriverDashboard /></ProtectedRoute>} />
+              <Route path="/driver/bookings"
+                element={<ProtectedRoute role="DRIVER"><DriverBookings /></ProtectedRoute>} />
               <Route path="/driver/profile"
                 element={<ProtectedRoute role="DRIVER"><DriverProfile /></ProtectedRoute>} />
             </Routes>

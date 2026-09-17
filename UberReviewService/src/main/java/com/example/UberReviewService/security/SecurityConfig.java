@@ -35,7 +35,7 @@ public class SecurityConfig  implements WebMvcConfigurer {
 
                                 .requestMatchers("/api/v1/profile/passenger").hasRole("PASSENGER")
                                 .requestMatchers("/api/v1/profile/driver").hasRole("DRIVER")
-                                .requestMatchers("api/v1/reviews/**").authenticated()
+                                .requestMatchers("/api/v1/reviews/**").authenticated()
                                 .anyRequest()
                                 .authenticated()
 

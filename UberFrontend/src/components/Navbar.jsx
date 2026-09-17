@@ -1,4 +1,4 @@
-﻿import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
@@ -32,6 +32,7 @@ export default function Navbar() {
           {isDriver && (
             <>
               <Link to="/driver/dashboard" className="hover:text-gray-300 transition">Dashboard</Link>
+              <Link to="/driver/bookings"  className="hover:text-gray-300 transition">My Rides</Link>
               <Link to="/driver/profile"   className="hover:text-gray-300 transition">Profile</Link>
             </>
           )}

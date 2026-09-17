@@ -2,9 +2,7 @@ package com.example.UberReviewService.Services;
 
 import com.example.UberReviewService.Repositories.DriverRepository;
 import com.example.UberReviewService.Repositories.PassengerRepository;
-import com.example.UberReviewService.dtos.DriverAvailabilityDto;
-import com.example.UberReviewService.dtos.DriverUpdateDto;
-import com.example.UberReviewService.dtos.PassengerUpdateDto;
+import com.example.UberReviewService.dtos.*;
 import com.example.uberproject_entityservice.models.Driver;
 import com.example.uberproject_entityservice.models.Passenger;
 import com.example.uberproject_entityservice.models.Review;
@@ -27,42 +25,36 @@ public class ProfileServiceimpl implements  ProfileService{
     }
 
     @Override
-    public Optional<Passenger> findPassengerByEmail(String email){
-        Optional<Passenger> passenger;
-        try{
-            passenger=passengerRepository.findByEmail(email);
-            if(passenger.isEmpty()){
-                throw new EntityNotFoundException("Passenger with id " + email + " not found");
+    public PassengerResponseDto findPassengerByEmail(String email){
+        Passenger passenger=passengerRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("passenger not found"));
+        return  PassengerResponseDto.builder()
+                .id(passenger.getId())
+                .email(passenger.getEmail())
+                .name(passenger.getName())
+                .phoneNumber(passenger.getPhoneNumber())
+                .home(passenger.getHome())
+                .lastKnownLocation(passenger.getLastKnownLocation())
+                .build();
 
-            }
-        }
-        catch (Exception e){
-            e.printStackTrace();
-            if(e.getClass() == EntityNotFoundException.class){
-                throw new FetchNotFoundException("Review with id " + email + " not found",email);
-            }
-            throw new FetchNotFoundException("Unable to fetch, PLease try again later!", email);
-        }
-        return passenger;
     }
     @Override
-    public Optional<Driver> findDriverByEmail(String email){
-        Optional<Driver> driver;
-        try{
-            driver=driverRepository.findByEmail(email);
-            if(driver.isEmpty()){
-                throw new EntityNotFoundException("Passenger with id " + email + " not found");
+    public DriverResponseDto findDriverByEmail(String email){
 
-            }
-        }
-        catch (Exception e){
-            e.printStackTrace();
-            if(e.getClass() == EntityNotFoundException.class){
-                throw new FetchNotFoundException("Review with id " + email + " not found",email);
-            }
-            throw new FetchNotFoundException("Unable to fetch, PLease try again later!", email);
-        }
-        return driver;
+        Driver driver = driverRepository.findByEmail(email) .orElseThrow(() -> new RuntimeException("Driver not found"));
+        return DriverResponseDto.builder()
+                .id(driver.getId())
+                .email(driver.getEmail())
+                .name(driver.getName())
+                .licenseNumber(driver.getLicenseNumber())
+                .phoneNumber(driver.getPhoneNumber())
+                .rating(driver.getRating())
+                .home(driver.getHome())
+                .lastKnownLocation(driver.getLastKnownLocation())
+                .aadharNumber(driver.getAadharNumber())
+                .activeCity(driver.getActiveCity())
+                .isAvailable(driver.isAvailable()).build();
+
+
     }
 
     @Override

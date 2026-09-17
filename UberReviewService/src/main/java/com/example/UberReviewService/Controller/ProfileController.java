@@ -1,10 +1,7 @@
 package com.example.UberReviewService.Controller;
 
 import com.example.UberReviewService.Services.ProfileService;
-import com.example.UberReviewService.dtos.DriverAvailabilityDto;
-import com.example.UberReviewService.dtos.DriverUpdateDto;
-import com.example.UberReviewService.dtos.PassengerUpdateDto;
-import com.example.UberReviewService.dtos.Simplebody;
+import com.example.UberReviewService.dtos.*;
 import com.example.uberproject_entityservice.models.Driver;
 import com.example.uberproject_entityservice.models.Passenger;
 import com.example.uberproject_entityservice.models.Review;
@@ -33,24 +30,18 @@ public class ProfileController {
     @PreAuthorize("hasRole('PASSENGER')")
     public ResponseEntity<?> findPassengerByEmail(Authentication authentication){
         String email=authentication.getName();
-       Optional<Passenger> passenger=this.profileService.findPassengerByEmail(email);
-        if (passenger.isPresent()) {
-            return new ResponseEntity<>(passenger.get(), HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>("Passenger not found", HttpStatus.NOT_FOUND);
-        }
+      PassengerResponseDto passengerResponseDto=profileService.findPassengerByEmail(email);
+      return new ResponseEntity<>(passengerResponseDto,HttpStatus.OK);
     }
 
     @GetMapping("/driver")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<?> findDriverByEmail(Authentication authentication){
+    public ResponseEntity<DriverResponseDto> findDriverByEmail(Authentication authentication){
         String email=authentication.getName();
-        try {
-            Optional<Driver> review = this.profileService.findDriverByEmail(email);
-            return new ResponseEntity<>(review, HttpStatus.OK);
-        }catch (Exception e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
-        }
+
+            DriverResponseDto driverResponseDto= profileService.findDriverByEmail(email);
+            return new ResponseEntity<>(driverResponseDto, HttpStatus.OK);
+
     }
 
     @PutMapping("/passenger")

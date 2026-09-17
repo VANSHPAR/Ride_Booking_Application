@@ -1,11 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getNearbyDrivers } from "../../services/locationService";
 import { createBooking } from "../../services/bookingService";
 import { getPassengerProfile } from "../../services/profileService";
-import MapPicker from "../../components/MapPicker";
-import DriversMap from "../../components/DriversMap";
+import UnifiedRideMap from "../../components/UnifiedRideMap";
 import { toast } from "react-toastify";
+
+// Helper to calculate approximate distance in km
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 export default function PassengerDashboard() {
   const { user, login } = useAuth();
@@ -14,8 +29,10 @@ export default function PassengerDashboard() {
   const [drivers, setDrivers]     = useState([]);
   const [loading, setLoading]     = useState(false);
   const [booking, setBooking]     = useState(null);
-  const [step, setStep]           = useState("pickup"); // pickup | dropoff | drivers | booked
+  const [step, setStep]           = useState("pickup"); // pickup | booked
+  const [activeMapMode, setActiveMapMode] = useState("pickup"); // "pickup" | "dropoff"
 
+  // Fetch actual profile ID on mount
   useEffect(() => {
     getPassengerProfile()
       .then((res) => {
@@ -28,25 +45,67 @@ export default function PassengerDashboard() {
       });
   }, []);
 
+  // Calculate distance & estimate fare
+  const tripDistance = useMemo(() => {
+    if (pickup?.latitude && dropoff?.latitude) {
+      return calculateDistance(
+        pickup.latitude,
+        pickup.longitude,
+        dropoff.latitude,
+        dropoff.longitude
+      );
+    }
+    return null;
+  }, [pickup, dropoff]);
+
+  const estimatedFare = useMemo(() => {
+    if (!tripDistance) return null;
+    const baseFare = 50; // base ₹50
+    const perKmRate = 14; // ₹14 / km
+    return Math.round(baseFare + tripDistance * perKmRate);
+  }, [tripDistance]);
+
   const handleGeolocate = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setPickup({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-        toast.success("Location detected!");
-        setStep("dropoff");
+        const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        setPickup(loc);
+        setActiveMapMode("dropoff");
+        toast.success("Pickup set to your current GPS location!");
       },
-      () => toast.error("Could not get your location")
+      () => toast.error("Could not retrieve your location")
     );
   };
 
+  const handleSelectPickup = (loc) => {
+    setPickup(loc);
+    toast.info("Pickup point updated!");
+    if (!dropoff) {
+      setActiveMapMode("dropoff");
+    }
+  };
+
+  const handleSelectDropoff = (loc) => {
+    setDropoff(loc);
+    toast.info("Drop-off point updated!");
+  };
+
   const handleFindDrivers = async () => {
-    if (!pickup) return toast.error("Select your pickup location first");
+    if (!pickup) return toast.error("Select your pickup location on the map first");
     setLoading(true);
     try {
       const res = await getNearbyDrivers(pickup.latitude, pickup.longitude);
-      setDrivers(res.data || []);
-      setStep("drivers");
-      if (res.data.length === 0) toast.info("No drivers nearby right now");
+      const list = res.data || [];
+      setDrivers(list);
+      if (list.length === 0) {
+        toast.info("No active drivers found nearby right now");
+      } else {
+        toast.success(`Found ${list.length} nearby driver(s) on the map!`);
+      }
     } catch (err) {
       console.error("Failed to fetch nearby drivers:", err);
       toast.error(err.response?.data?.message || err.response?.data || "Could not fetch nearby drivers");
@@ -56,90 +115,255 @@ export default function PassengerDashboard() {
   };
 
   const handleBook = async () => {
-    if (!pickup) return toast.error("Select pickup location");
+    if (!pickup) return toast.error("Please set a pickup location on the map");
     setLoading(true);
     try {
       const payload = {
-        passengerId: user.id ,
+        passengerId: user?.id || 1,
         startLocation: pickup,
         endLocation: dropoff || pickup,
       };
       const res = await createBooking(payload);
       setBooking(res.data);
       setStep("booked");
-      toast.success("Ride booked! Finding your driver...");
+      toast.success("Ride booked! Searching for nearby driver...");
     } catch (err) {
-      toast.error(err.response?.data || "Booking failed");
+      console.error("Booking failed:", err);
+      toast.error(err.response?.data || "Booking request failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-1">Good day, {user?.name}! 👋</h1>
-        <p className="text-gray-500 mb-8">Where are you going?</p>
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-950 tracking-tight">
+              Book a Ride, {user?.name || "Passenger"} 👋
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">
+              Select your pickup and drop-off points directly on the map.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleGeolocate}
+              className="bg-white hover:bg-gray-100 text-gray-900 border border-gray-300 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm flex items-center gap-2"
+            >
+              <span>📡</span>
+              <span>Use Current GPS</span>
+            </button>
+          </div>
+        </div>
 
         {step === "booked" ? (
-          <div className="bg-white rounded-2xl shadow p-8 text-center">
+          <div className="bg-white rounded-3xl shadow-xl p-10 max-w-xl mx-auto text-center border border-gray-100 animate-fade-in">
             <div className="text-6xl mb-4">🚗</div>
-            <h2 className="text-2xl font-bold mb-2">Ride Booked!</h2>
-            <p className="text-gray-500 mb-4">Booking ID: <span className="font-mono font-bold">#{booking?.bookingId}</span></p>
-            <span className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full font-semibold text-sm">
-              {booking?.bookingStatus}
-            </span>
-            <p className="text-gray-400 text-sm mt-4">A driver is being assigned. Check My Bookings for updates.</p>
-            <button onClick={() => { setStep("pickup"); setBooking(null); setDrivers([]); setPickup(null); setDropoff(null); }}
-              className="mt-6 bg-black text-white px-6 py-2 rounded-full hover:bg-gray-800 transition font-semibold">
-              Book Another
+            <h2 className="text-3xl font-extrabold mb-2 text-gray-900">Ride Requested!</h2>
+            <p className="text-gray-500 mb-6 text-sm">
+              Booking Reference: <span className="font-mono font-bold text-gray-900">#{booking?.bookingId}</span>
+            </p>
+
+            <div className="inline-block bg-yellow-100 text-yellow-800 px-5 py-2 rounded-full font-bold text-sm mb-6">
+              Status: {booking?.bookingStatus || "ASSIGNING_DRIVER"}
+            </div>
+
+            <p className="text-gray-600 text-sm leading-relaxed max-w-md mx-auto mb-8">
+              We have broadcasted your request to nearby drivers. You can monitor live status from your assigned rides in <strong>My Bookings</strong>.
+            </p>
+
+            <button
+              onClick={() => {
+                setStep("pickup");
+                setBooking(null);
+                setDrivers([]);
+                setPickup(null);
+                setDropoff(null);
+              }}
+              className="bg-black text-white px-8 py-3.5 rounded-2xl hover:bg-gray-800 transition font-bold text-sm shadow-md"
+            >
+              Book Another Ride
             </button>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Left panel */}
-            <div className="space-y-5">
-              {/* Step 1 - Pickup */}
-              <div className="bg-white rounded-2xl shadow p-6">
-                <h2 className="text-lg font-bold mb-3">📍 Pickup Location</h2>
-                <button onClick={handleGeolocate}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-black font-semibold py-2 px-4 rounded-lg transition mb-3 text-sm">
-                  📡 Use My Current Location
-                </button>
-                {pickup
-                  ? <p className="text-sm text-gray-500 bg-green-50 p-3 rounded-lg">✅ {pickup.latitude.toFixed(5)}, {pickup.longitude.toFixed(5)}</p>
-                  : <p className="text-sm text-gray-400">Click on the map or use GPS above</p>}
+          <div className="grid lg:grid-cols-12 gap-8 items-start">
+            {/* Left Column: Ride Controls & Fare Summary (5 Cols) */}
+            <div className="lg:col-span-5 space-y-5">
+              {/* Pickup Location Card */}
+              <div
+                onClick={() => setActiveMapMode("pickup")}
+                className={`cursor-pointer rounded-2xl p-5 transition border-2 ${
+                  activeMapMode === "pickup"
+                    ? "bg-white border-emerald-500 shadow-md ring-2 ring-emerald-100"
+                    : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">
+                      A
+                    </span>
+                    <h3 className="font-bold text-gray-900 text-base">Pickup Location</h3>
+                  </div>
+                  {activeMapMode === "pickup" && (
+                    <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      Selecting on map...
+                    </span>
+                  )}
+                </div>
+
+                {pickup ? (
+                  <div className="flex items-center justify-between bg-emerald-50/60 p-3 rounded-xl">
+                    <p className="text-xs font-mono font-medium text-emerald-900">
+                      📍 {pickup.latitude.toFixed(5)}, {pickup.longitude.toFixed(5)}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPickup(null);
+                      }}
+                      className="text-xs text-red-600 hover:underline font-semibold"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">
+                    Click anywhere on the map on the right to set your pickup point.
+                  </p>
+                )}
               </div>
 
-              {/* Step 2 - Dropoff */}
-              <div className="bg-white rounded-2xl shadow p-6">
-                <h2 className="text-lg font-bold mb-3">🏁 Drop-off Location</h2>
-                {dropoff
-                  ? <p className="text-sm text-gray-500 bg-blue-50 p-3 rounded-lg">✅ {dropoff.latitude.toFixed(5)}, {dropoff.longitude.toFixed(5)}</p>
-                  : <p className="text-sm text-gray-400">Click the right map to set drop-off</p>}
+              {/* Drop-off Location Card */}
+              <div
+                onClick={() => setActiveMapMode("dropoff")}
+                className={`cursor-pointer rounded-2xl p-5 transition border-2 ${
+                  activeMapMode === "dropoff"
+                    ? "bg-white border-black shadow-md ring-2 ring-gray-100"
+                    : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold">
+                      B
+                    </span>
+                    <h3 className="font-bold text-gray-900 text-base">Drop-off Location</h3>
+                  </div>
+                  {activeMapMode === "dropoff" && (
+                    <span className="text-[11px] font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded-full">
+                      Selecting on map...
+                    </span>
+                  )}
+                </div>
+
+                {dropoff ? (
+                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
+                    <p className="text-xs font-mono font-medium text-gray-900">
+                      🏁 {dropoff.latitude.toFixed(5)}, {dropoff.longitude.toFixed(5)}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDropoff(null);
+                      }}
+                      className="text-xs text-red-600 hover:underline font-semibold"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">
+                    Click anywhere on the map on the right to set your destination.
+                  </p>
+                )}
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button onClick={handleFindDrivers} disabled={!pickup || loading}
-                  className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-700 transition disabled:opacity-40">
-                  {loading ? "Searching..." : "🔍 Find Drivers"}
+              {/* Trip Estimate Summary */}
+              {tripDistance !== null && (
+                <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-3">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Ride Summary
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-3 rounded-xl">
+                      <span className="text-xs text-gray-500 block">Est. Distance</span>
+                      <span className="text-lg font-extrabold text-gray-900">
+                        {tripDistance.toFixed(2)} km
+                      </span>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-xl">
+                      <span className="text-xs text-gray-500 block">Est. Fare</span>
+                      <span className="text-lg font-extrabold text-emerald-700">
+                        ₹{estimatedFare}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="space-y-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleFindDrivers}
+                  disabled={!pickup || loading}
+                  className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 px-6 rounded-2xl transition disabled:opacity-40 shadow-sm flex items-center justify-center gap-2"
+                >
+                  <span>🔍</span>
+                  <span>{loading ? "Searching Nearby Drivers..." : "Find Nearby Drivers"}</span>
                 </button>
-                <button onClick={handleBook} disabled={!pickup || loading}
-                  className="flex-1 bg-black text-white font-bold py-3 rounded-xl hover:bg-gray-900 transition disabled:opacity-40">
-                  {loading ? "Booking..." : "⚡ Book Ride"}
+
+                <button
+                  type="button"
+                  onClick={handleBook}
+                  disabled={!pickup || loading}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-2xl transition disabled:opacity-40 shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 text-base"
+                >
+                  <span>⚡</span>
+                  <span>Confirm & Book Ride</span>
                 </button>
               </div>
 
-              {/* Nearby drivers list */}
+              {/* Nearby Drivers list */}
               {drivers.length > 0 && (
-                <div className="bg-white rounded-2xl shadow p-5">
-                  <h3 className="font-bold mb-3">🚗 {drivers.length} Drivers Nearby</h3>
-                  <div className="space-y-2">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                      <span>🚗</span>
+                      <span>{drivers.length} Drivers Found in Range</span>
+                    </h4>
+                    <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">
+                      5 km range
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {drivers.map((d, i) => (
-                      <div key={i} className="flex justify-between text-sm border-b pb-2">
-                        <span>Driver #{d.driverId}</span>
-                        <span className="text-gray-500">{d.distance?.toFixed(2) || "~"} km away</span>
+                      <div
+                        key={d.driverId || i}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">🚖</span>
+                          <div>
+                            <p className="font-bold text-gray-800">Driver #{d.driverId}</p>
+                            <p className="text-gray-400 text-[10px]">
+                              {d.latitude?.toFixed(4)}, {d.longitude?.toFixed(4)}
+                            </p>
+                          </div>
+                        </div>
+                        {d.distance !== undefined && (
+                          <span className="font-bold text-emerald-700">
+                            ~{d.distance.toFixed(2)} km
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -147,22 +371,19 @@ export default function PassengerDashboard() {
               )}
             </div>
 
-            {/* Right - Maps */}
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-gray-600 mb-1">Pickup Map</p>
-                <MapPicker position={pickup} onSelect={(loc) => { setPickup(loc); setStep("dropoff"); }} label="Click to set pickup" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-600 mb-1">Drop-off Map</p>
-                <MapPicker position={dropoff} onSelect={setDropoff} label="Click to set drop-off" />
-              </div>
-              {drivers.length > 0 && (
-                <div>
-                  <p className="text-sm font-semibold text-gray-600 mb-1">Nearby Drivers</p>
-                  <DriversMap passengerLocation={pickup} drivers={drivers} />
-                </div>
-              )}
+            {/* Right Column: The ONE Unified Interactive Map (7 Cols) */}
+            <div className="lg:col-span-7">
+              <UnifiedRideMap
+                pickup={pickup}
+                dropoff={dropoff}
+                drivers={drivers}
+                activeMode={activeMapMode}
+                setActiveMode={setActiveMapMode}
+                onSelectPickup={handleSelectPickup}
+                onSelectDropoff={handleSelectDropoff}
+                onClearPickup={() => setPickup(null)}
+                onClearDropoff={() => setDropoff(null)}
+              />
             </div>
           </div>
         )}
