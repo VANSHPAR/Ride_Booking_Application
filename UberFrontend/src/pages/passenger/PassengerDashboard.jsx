@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getNearbyDrivers } from "../../services/locationService";
-import { createBooking } from "../../services/bookingService";
+import { createBooking, getMyBookings, cancelBooking } from "../../services/bookingService";
 import { getPassengerProfile } from "../../services/profileService";
 import UnifiedRideMap from "../../components/UnifiedRideMap";
 import { toast } from "react-toastify";
@@ -31,6 +31,8 @@ export default function PassengerDashboard() {
   const [booking, setBooking]     = useState(null);
   const [step, setStep]           = useState("pickup"); // pickup | booked
   const [activeMapMode, setActiveMapMode] = useState("pickup"); // "pickup" | "dropoff"
+  const [cancelling, setCancelling] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Fetch actual profile ID on mount
   useEffect(() => {
@@ -44,6 +46,74 @@ export default function PassengerDashboard() {
         console.warn("Could not load passenger profile id:", err);
       });
   }, []);
+
+  // Poll booking status every 2.5 seconds when booked and waiting for driver
+  useEffect(() => {
+    if (step !== "booked" || !booking?.bookingId) return;
+
+    if (
+      booking.bookingStatus === "SCHEDULED" ||
+      booking.bookingStatus === "COMPLETED" ||
+      booking.bookingStatus === "CANCELLED"
+    ) {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await getMyBookings();
+        const list = res.data || [];
+        const current = list.find((b) => b.bookingId === booking.bookingId);
+        if (current && current.bookingStatus !== booking.bookingStatus) {
+          setBooking(current);
+          if (current.bookingStatus === "SCHEDULED") {
+            toast.success(`🎉 Driver #${current.driverId || ""} accepted your ride! Status is now SCHEDULED!`);
+          } else if (current.bookingStatus === "CANCELLED") {
+            toast.info("This ride has been cancelled.");
+          }
+        }
+      } catch (err) {
+        console.warn("Polling booking status error:", err);
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [step, booking?.bookingId, booking?.bookingStatus]);
+
+  const refreshBookingStatus = async (showToast = false) => {
+    if (!booking?.bookingId) return;
+    setRefreshing(true);
+    try {
+      const res = await getMyBookings();
+      const list = res.data || [];
+      const current = list.find((b) => b.bookingId === booking.bookingId);
+      if (current) {
+        setBooking(current);
+        if (showToast) {
+          toast.info(`Status refreshed: ${current.bookingStatus}`);
+        }
+      }
+    } catch (err) {
+      console.warn("Refresh status error:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleCancelBooking = async () => {
+    if (!booking?.bookingId) return;
+    setCancelling(true);
+    try {
+      await cancelBooking(booking.bookingId);
+      toast.success("Ride cancelled successfully.");
+      setBooking((prev) => ({ ...prev, bookingStatus: "CANCELLED" }));
+    } catch (err) {
+      console.error("Cancel failed:", err);
+      toast.error(err.response?.data?.message || err.response?.data || "Could not cancel ride");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   // Calculate distance & estimate fare
   const tripDistance = useMemo(() => {
@@ -135,6 +205,9 @@ export default function PassengerDashboard() {
     }
   };
 
+  const isScheduled = booking?.bookingStatus === "SCHEDULED";
+  const isCancelled = booking?.bookingStatus === "CANCELLED";
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
@@ -161,33 +234,113 @@ export default function PassengerDashboard() {
         </div>
 
         {step === "booked" ? (
-          <div className="bg-white rounded-3xl shadow-xl p-10 max-w-xl mx-auto text-center border border-gray-100 animate-fade-in">
-            <div className="text-6xl mb-4">🚗</div>
-            <h2 className="text-3xl font-extrabold mb-2 text-gray-900">Ride Requested!</h2>
-            <p className="text-gray-500 mb-6 text-sm">
-              Booking Reference: <span className="font-mono font-bold text-gray-900">#{booking?.bookingId}</span>
-            </p>
-
-            <div className="inline-block bg-yellow-100 text-yellow-800 px-5 py-2 rounded-full font-bold text-sm mb-6">
-              Status: {booking?.bookingStatus || "ASSIGNING_DRIVER"}
+          <div className="bg-white rounded-3xl shadow-xl p-10 max-w-xl mx-auto text-center border border-gray-100 animate-fade-in space-y-6">
+            <div className="text-6xl mb-2">
+              {isScheduled ? "🎉" : isCancelled ? "🚫" : "🚗"}
             </div>
 
-            <p className="text-gray-600 text-sm leading-relaxed max-w-md mx-auto mb-8">
-              We have broadcasted your request to nearby drivers. You can monitor live status from your assigned rides in <strong>My Bookings</strong>.
-            </p>
+            <div>
+              <h2 className="text-3xl font-extrabold text-gray-900">
+                {isScheduled
+                  ? "Ride Confirmed & Scheduled!"
+                  : isCancelled
+                  ? "Ride Cancelled"
+                  : "Ride Requested!"}
+              </h2>
+              <p className="text-gray-500 text-sm mt-1">
+                Booking Reference:{" "}
+                <span className="font-mono font-bold text-gray-900">#{booking?.bookingId}</span>
+              </p>
+            </div>
 
-            <button
-              onClick={() => {
-                setStep("pickup");
-                setBooking(null);
-                setDrivers([]);
-                setPickup(null);
-                setDropoff(null);
-              }}
-              className="bg-black text-white px-8 py-3.5 rounded-2xl hover:bg-gray-800 transition font-bold text-sm shadow-md"
-            >
-              Book Another Ride
-            </button>
+            {/* Live Status Badge */}
+            <div className="inline-flex items-center gap-2">
+              <span
+                className={`px-5 py-2 rounded-full font-extrabold text-sm tracking-wide shadow-sm ${
+                  isScheduled
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : isCancelled
+                    ? "bg-red-100 text-red-800 border border-red-300"
+                    : "bg-amber-100 text-amber-800 border border-amber-300 animate-pulse"
+                }`}
+              >
+                ● Status: {booking?.bookingStatus || "ASSIGNING_DRIVER"}
+              </span>
+            </div>
+
+            {/* Assigned Driver Details Card if Scheduled */}
+            {isScheduled && (
+              <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-5 text-left space-y-2">
+                <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+                  <span className="font-bold text-emerald-950 text-sm flex items-center gap-1.5">
+                    <span>🚖</span> Assigned Driver
+                  </span>
+                  <span className="font-mono font-extrabold text-emerald-800 bg-white px-3 py-0.5 rounded-full border border-emerald-300 text-xs">
+                    Driver #{booking?.driverId || "Assigned"}
+                  </span>
+                </div>
+                <p className="text-xs text-emerald-900">
+                  Your driver has accepted your ride request and is heading to your pickup location.
+                </p>
+                {booking?.startLocation && (
+                  <div className="text-xs text-emerald-800 pt-1 flex justify-between">
+                    <span>📍 Pickup Point:</span>
+                    <span className="font-mono">
+                      {booking.startLocation.latitude?.toFixed(4)}, {booking.startLocation.longitude?.toFixed(4)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!isScheduled && !isCancelled && (
+              <p className="text-gray-600 text-xs leading-relaxed max-w-md mx-auto">
+                We have notified nearby drivers. Your screen will automatically update to <strong>SCHEDULED</strong> the moment a driver accepts.
+              </p>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              {!isScheduled && !isCancelled && (
+                <>
+                  <button
+                    type="button"
+                    disabled={refreshing}
+                    onClick={() => refreshBookingStatus(true)}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold px-6 py-3 rounded-2xl transition text-sm flex items-center justify-center gap-2"
+                  >
+                    <span>🔄</span>
+                    <span>{refreshing ? "Checking..." : "Refresh Status"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={cancelling}
+                    onClick={handleCancelBooking}
+                    className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold px-6 py-3 rounded-2xl transition text-sm flex items-center justify-center gap-2"
+                  >
+                    <span>✕</span>
+                    <span>{cancelling ? "Cancelling..." : "Cancel Ride"}</span>
+                  </button>
+                </>
+              )}
+
+              {(isScheduled || isCancelled) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("pickup");
+                    setBooking(null);
+                    setDrivers([]);
+                    setPickup(null);
+                    setDropoff(null);
+                  }}
+                  className="bg-black text-white px-8 py-3.5 rounded-2xl hover:bg-gray-800 transition font-bold text-sm shadow-md"
+                >
+                  Book Another Ride
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid lg:grid-cols-12 gap-8 items-start">

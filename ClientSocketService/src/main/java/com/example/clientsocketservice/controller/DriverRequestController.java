@@ -20,6 +20,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -90,8 +92,22 @@ public class DriverRequestController {
 
         ResponseEntity<UpdateBookingResponseDto> result=this.restTemplate.postForEntity("http://localhost:7464/api/v1/booking/"+rideResponseDto.bookingId,httpEntity,UpdateBookingResponseDto.class);
         System.out.println("Here fail 1");
-        kafkaProducerService.publishMessage("sample-topic","Hello World");
+       // kafkaProducerService.publishMessage("sample-topic","Hello World");
         System.out.println(result.getStatusCode());
+
+        if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
+            Map<String, Object> acceptedEvent = new HashMap<>();
+            acceptedEvent.put("bookingId", rideResponseDto.getBookingId());
+            acceptedEvent.put("driverId", Long.parseLong(userId));
+            acceptedEvent.put("status", "ACCEPTED");
+            simpMessagingTemplate.convertAndSend("/topic/rideAccepted", acceptedEvent);
+            simpMessagingTemplate.convertAndSend("/topic/rideStatus/" + rideResponseDto.getBookingId(), acceptedEvent);
+
+            kafkaProducerService.publishMessage("sample-topic", "Booking #" + rideResponseDto.getBookingId() + " assigned to driver #" + userId);
+        }
+        else {
+            System.err.println("Failed to update booking status. HTTP status: " + result.getStatusCode());
+        }
     }
 
 }

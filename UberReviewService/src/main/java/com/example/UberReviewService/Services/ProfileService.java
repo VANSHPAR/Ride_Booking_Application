@@ -13,9 +13,9 @@ public interface ProfileService {
 
    public DriverResponseDto findDriverByEmail(String email);
 
-   public Passenger updatePassenger(String email, PassengerUpdateDto passenger);
+   public PassengerResponseDto updatePassenger(String email, PassengerUpdateDto passenger);
 
-   public  Driver updateDriver(String email, DriverUpdateDto driver);
+   public  DriverResponseDto updateDriver(String email, DriverUpdateDto driver);
 
    public void updateAvailability(String email, DriverAvailabilityDto driverAvailabilityDto);
 

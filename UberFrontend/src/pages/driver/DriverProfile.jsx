@@ -6,6 +6,25 @@ import {
 } from "../../services/profileService";
 import { toast } from "react-toastify";
 
+const formatLocation = (loc) => {
+  if (
+    loc &&
+    loc.latitude !== undefined &&
+    loc.latitude !== null &&
+    loc.latitude !== "" &&
+    loc.longitude !== undefined &&
+    loc.longitude !== null &&
+    loc.longitude !== ""
+  ) {
+    const lat = Number(loc.latitude);
+    const lng = Number(loc.longitude);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      return `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+  }
+  return "Not set";
+};
+
 export default function DriverProfile() {
   const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -38,12 +57,12 @@ export default function DriverProfile() {
           rating: data?.rating !== undefined && data?.rating !== null ? data.rating : "",
           isAvailable: available,
           home: {
-            latitude: data?.home?.latitude !== undefined ? data.home.latitude : "",
-            longitude: data?.home?.longitude !== undefined ? data.home.longitude : "",
+            latitude: data?.home?.latitude !== undefined && data?.home?.latitude !== null ? data.home.latitude : "",
+            longitude: data?.home?.longitude !== undefined && data?.home?.longitude !== null ? data.home.longitude : "",
           },
           lastKnownLocation: {
-            latitude: data?.lastKnownLocation?.latitude !== undefined ? data.lastKnownLocation.latitude : "",
-            longitude: data?.lastKnownLocation?.longitude !== undefined ? data.lastKnownLocation.longitude : "",
+            latitude: data?.lastKnownLocation?.latitude !== undefined && data?.lastKnownLocation?.latitude !== null ? data.lastKnownLocation.latitude : "",
+            longitude: data?.lastKnownLocation?.longitude !== undefined && data?.lastKnownLocation?.longitude !== null ? data.lastKnownLocation.longitude : "",
           },
         });
       })
@@ -98,22 +117,34 @@ export default function DriverProfile() {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
+      const hasHome = form.home.latitude !== "" && form.home.longitude !== "" && !isNaN(Number(form.home.latitude)) && !isNaN(Number(form.home.longitude));
+      const hasLastKnown = form.lastKnownLocation.latitude !== "" && form.lastKnownLocation.longitude !== "" && !isNaN(Number(form.lastKnownLocation.latitude)) && !isNaN(Number(form.lastKnownLocation.longitude));
+
       const payload = {
+        id: profile?.id || 1,
         name: form.name,
         licenseNumber: form.licenseNumber,
         activeCity: form.activeCity,
         aadharNumber: form.aadharNumber,
         isAvailable: form.isAvailable,
         rating: form.rating !== "" ? parseFloat(form.rating) : null,
-        home: form.home.latitude !== "" && form.home.longitude !== ""
+        home: hasHome
           ? { latitude: parseFloat(form.home.latitude), longitude: parseFloat(form.home.longitude) }
           : null,
-        lastKnownLocation: form.lastKnownLocation.latitude !== "" && form.lastKnownLocation.longitude !== ""
+        lastKnownLocation: hasLastKnown
           ? { latitude: parseFloat(form.lastKnownLocation.latitude), longitude: parseFloat(form.lastKnownLocation.longitude) }
           : null,
       };
 
-      await updateDriverProfile(payload);
+      const res = await updateDriverProfile(payload);
+      if (res?.data) {
+        setProfile((prev) => ({
+          ...prev,
+          ...res.data,
+          home: payload.home,
+          lastKnownLocation: payload.lastKnownLocation,
+        }));
+      }
       toast.success("Driver profile updated successfully!");
       setEditing(false);
       loadProfile();
@@ -183,19 +214,11 @@ export default function DriverProfile() {
               />
               <InfoRow
                 label="Home Location"
-                value={
-                  profile?.home?.latitude !== undefined && profile?.home?.longitude !== undefined
-                    ? `📍 ${profile.home.latitude.toFixed(4)}, ${profile.home.longitude.toFixed(4)}`
-                    : "Not set"
-                }
+                value={formatLocation(profile?.home)}
               />
               <InfoRow
                 label="Last Known Location"
-                value={
-                  profile?.lastKnownLocation?.latitude !== undefined && profile?.lastKnownLocation?.longitude !== undefined
-                    ? `📍 ${profile.lastKnownLocation.latitude.toFixed(4)}, ${profile.lastKnownLocation.longitude.toFixed(4)}`
-                    : "Not set"
-                }
+                value={formatLocation(profile?.lastKnownLocation)}
               />
             </div>
 

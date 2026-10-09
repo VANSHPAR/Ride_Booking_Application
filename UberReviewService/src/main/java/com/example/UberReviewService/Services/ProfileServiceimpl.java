@@ -58,7 +58,7 @@ public class ProfileServiceimpl implements  ProfileService{
     }
 
     @Override
-    public Driver updateDriver(String email, DriverUpdateDto driver){
+    public DriverResponseDto updateDriver(String email, DriverUpdateDto driver){
         Driver d=driverRepository.findByEmail(email). orElseThrow(EntityNotFoundException::new);
         if(driver.getAadharNumber()!=null) d.setAadharNumber(driver.getAadharNumber());
 
@@ -66,20 +66,44 @@ public class ProfileServiceimpl implements  ProfileService{
         if(driver.getActiveCity()!=null) d.setActiveCity(driver.getActiveCity());
         if(driver.getLicenseNumber()!=null) d.setLicenseNumber(driver.getLicenseNumber());
         if(driver.getLastKnownLocation()!=null) d.setLicenseNumber(driver.getLicenseNumber());
+        if(driver.getHome()!=null) d.setHome(driver.getHome());
         if(driver.getName()!=null) d.setName(driver.getName());
+        Driver driver1=driverRepository.save(d);
 
-        return driverRepository.save(d);
+        return DriverResponseDto.builder()
+                .id(driver1.getId())
+                .email(driver1.getEmail())
+                .name(driver1.getName())
+                .licenseNumber(driver1.getLicenseNumber())
+                .phoneNumber(driver1.getPhoneNumber())
+                .rating(driver1.getRating())
+                .home(driver1.getHome())
+                .lastKnownLocation(driver1.getLastKnownLocation())
+                .aadharNumber(driver1.getAadharNumber())
+                .activeCity(driver1.getActiveCity())
+                .isAvailable(driver1.isAvailable()).build();
+
+
+
     }
 
     @Override
-    public Passenger updatePassenger(String email, PassengerUpdateDto passenger){
+    public PassengerResponseDto updatePassenger(String email, PassengerUpdateDto passenger){
         Passenger p=passengerRepository.findByEmail(email).orElseThrow(EntityNotFoundException::new);
         if(passenger.getLastKnownLocation()!=null) p.setLastKnownLocation(passenger.getLastKnownLocation());
 
         if(passenger.getRating()!=null) p.setRating(passenger.getRating());
         if(passenger.getHome()!=null)p.setHome(passenger.getHome());
         if(passenger.getName()!=null) p.setName(passenger.getName());
-        return  passengerRepository.save(p);
+        Passenger passenger1 =passengerRepository.save(p);
+        return  PassengerResponseDto.builder()
+                .id(passenger1.getId())
+                .email(passenger1.getEmail())
+                .name(passenger1.getName())
+                .phoneNumber(passenger1.getPhoneNumber())
+                .home(passenger1.getHome())
+                .lastKnownLocation(passenger1.getLastKnownLocation())
+                .build();
     }
     @Override
     public void updateAvailability(String email, DriverAvailabilityDto driverAvailabilityDto){
