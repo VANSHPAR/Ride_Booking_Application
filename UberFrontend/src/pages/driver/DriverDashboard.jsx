@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { saveDriverLocation } from "../../services/locationService";
+import { saveDriverLocation, removeDriverLocation } from "../../services/locationService";
 import { getDriverProfile } from "../../services/profileService";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import UnifiedDriverMap from "../../components/UnifiedDriverMap";
@@ -8,11 +8,22 @@ import { toast } from "react-toastify";
 
 export default function DriverDashboard() {
   const { user, login } = useAuth();
-  const [online, setOnline] = useState(false);
-  const [location, setLocation] = useState(null);
+
+  // ✅ Restore online state from localStorage so navigation doesn't reset it
+  const [online, setOnline] = useState(() => {
+    return localStorage.getItem("driver_online") === "true";
+  });
+  const [location, setLocation] = useState(() => {
+    const saved = localStorage.getItem("driver_location");
+    return saved ? JSON.parse(saved) : null;
+  });
   const [rideRequest, setRideRequest] = useState(null);
   const [acceptedRide, setAcceptedRide] = useState(null);
-  const [status, setStatus] = useState("Offline");
+  const [status, setStatus] = useState(() =>
+    localStorage.getItem("driver_online") === "true"
+      ? "Online — broadcasting to nearby passengers"
+      : "Offline"
+  );
   const [countdown, setCountdown] = useState(30);
 
   const intervalRef = useRef(null);
@@ -31,6 +42,24 @@ export default function DriverDashboard() {
         console.warn("Could not load driver profile id:", err);
       });
   }, []);
+
+  // ✅ If driver was online before navigating away, restart GPS interval on remount
+  useEffect(() => {
+    if (online) {
+      intervalRef.current = setInterval(() => {
+        navigator.geolocation.getCurrentPosition((p) => {
+          const lat = p.coords.latitude;
+          const lng = p.coords.longitude;
+          setLocation({ latitude: lat, longitude: lng });
+          localStorage.setItem("driver_location", JSON.stringify({ latitude: lat, longitude: lng }));
+          publishLocation(lat, lng);
+        });
+      }, 30000);
+    }
+    return () => {
+      clearInterval(intervalRef.current);
+    };
+  }, [online]);
 
   const { sendRideResponse } = useWebSocket({
     driverId: user?.id,
@@ -90,6 +119,7 @@ export default function DriverDashboard() {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setLocation({ latitude: lat, longitude: lng });
+        localStorage.setItem("driver_location", JSON.stringify({ latitude: lat, longitude: lng }));
         if (online) {
           publishLocation(lat, lng);
         }
@@ -109,18 +139,15 @@ export default function DriverDashboard() {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setLocation({ latitude: lat, longitude: lng });
+        // ✅ Persist location so it's restored on navigation return
+        localStorage.setItem("driver_location", JSON.stringify({ latitude: lat, longitude: lng }));
         publishLocation(lat, lng);
         setOnline(true);
+        // ✅ Persist online status — survives tab navigation
+        localStorage.setItem("driver_online", "true");
         setStatus("Online — broadcasting to nearby passengers");
         toast.success("You are now ONLINE and available for rides!");
-
-        // Push GPS every 30 seconds
-        intervalRef.current = setInterval(() => {
-          navigator.geolocation.getCurrentPosition((p) => {
-            setLocation({ latitude: p.coords.latitude, longitude: p.coords.longitude });
-            publishLocation(p.coords.latitude, p.coords.longitude);
-          });
-        }, 30000);
+        // Note: GPS interval is started by the useEffect watching `online`
       },
       () => toast.error("Could not get your location. Please enable GPS permissions.")
     );
@@ -133,6 +160,17 @@ export default function DriverDashboard() {
     setRideRequest(null);
     setAcceptedRide(null);
     setStatus("Offline");
+    // ✅ Clear persisted online state
+    localStorage.removeItem("driver_online");
+    localStorage.removeItem("driver_location");
+
+    // Tell backend to remove driver from Redis so they don't show in nearby results
+    if (user?.id) {
+      removeDriverLocation(user.id)
+        .then(() => console.log("Driver removed from Redis"))
+        .catch((err) => console.error("Failed to remove driver from Redis:", err));
+    }
+
     toast.info("You are now OFFLINE");
   };
 

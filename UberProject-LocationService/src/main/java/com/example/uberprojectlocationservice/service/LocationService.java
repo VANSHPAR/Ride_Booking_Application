@@ -11,4 +11,6 @@ public interface LocationService {
     Boolean saveDriverLocation(String drivarId,Double latitude,Double longitude);
 
     List<DriverLocationDto> getNearByDrivers(Double latitude,Double longitude);
+
+    Boolean removeDriverLocation(String driverId);
 }

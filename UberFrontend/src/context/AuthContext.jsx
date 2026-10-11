@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext(null);
 
@@ -15,6 +15,9 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     localStorage.removeItem("uber_user");
+    // ✅ Clear driver online state so next login starts fresh
+    localStorage.removeItem("driver_online");
+    localStorage.removeItem("driver_location");
     setUser(null);
   };
 

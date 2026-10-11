@@ -13,9 +13,11 @@ import java.util.List;
 @Service
 public class RedisLocationServiceimpl implements LocationService{
 
-    private StringRedisTemplate stringRedisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
 
     private static final String DRIVER_GEO_OPS_KEY="drivers";
+
+    private static  final String DRIVER_ONLINE_SET_KEY="drivers:online";
 
     private static final Double SEARCH_RADIUS=100.0;
 
@@ -30,6 +32,14 @@ public class RedisLocationServiceimpl implements LocationService{
                         drivarId,
                         new Point(
                                 latitude,longitude)));
+        stringRedisTemplate.opsForSet().add(DRIVER_ONLINE_SET_KEY,drivarId);
+        return true;
+    }
+
+    @Override
+    public Boolean removeDriverLocation(String driverId){
+        stringRedisTemplate.opsForZSet().remove(DRIVER_GEO_OPS_KEY,driverId);
+        stringRedisTemplate.opsForSet().remove(DRIVER_ONLINE_SET_KEY,driverId);
         return true;
     }
 
@@ -49,15 +59,24 @@ public class RedisLocationServiceimpl implements LocationService{
         }
 
         for(GeoResult<RedisGeoCommands.GeoLocation<String>> res:results){
-            List<Point> points = geoOps.position(DRIVER_GEO_OPS_KEY, res.getContent().getName());
-            if (points != null && !points.isEmpty() && points.get(0) != null) {
-                Point point = points.get(0);
-                DriverLocationDto driverLocation=DriverLocationDto.builder()
-                        .driverId(res.getContent().getName())
-                        .latitude(point.getX())
-                        .longitude(point.getY()).build();
-                drivers.add(driverLocation);
+            String driverId=res.getContent().getName();
+
+            Boolean isOnline=stringRedisTemplate.opsForSet().isMember(DRIVER_ONLINE_SET_KEY,driverId);
+
+            if(Boolean.TRUE.equals(isOnline)){
+                List<Point> points = geoOps.position(DRIVER_GEO_OPS_KEY, res.getContent().getName());
+                if (points != null && !points.isEmpty() && points.get(0) != null) {
+                    Point point = points.get(0);
+                    DriverLocationDto driverLocation=DriverLocationDto.builder()
+                            .driverId(res.getContent().getName())
+                            .latitude(point.getX())
+                            .longitude(point.getY()).build();
+                    drivers.add(driverLocation);
+                }
+
             }
+
+
         }
         return drivers;
     }

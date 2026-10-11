@@ -55,4 +55,18 @@ public class LocationController {
         }
 
     }
+
+
+    @DeleteMapping("/drivers/{driverId}")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Boolean> removeDriverLocation(@PathVariable String driverId){
+        try{
+            Boolean res=locationService.removeDriverLocation(driverId);
+            return new ResponseEntity<>(res,HttpStatus.OK);
+
+        }
+        catch (Exception e){
+            return new ResponseEntity<>(false,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
