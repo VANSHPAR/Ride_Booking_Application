@@ -119,27 +119,39 @@ export default function PassengerProfile() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+      <div className="flex justify-center py-20 bg-black min-h-screen">
+        <div className="w-10 h-10 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="max-w-xl mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-8">Passenger Profile</h1>
+    <div className="min-h-screen bg-black text-gray-100 py-10 px-4 sm:px-6 relative overflow-hidden">
+      {/* Background ambient glowing blobs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 -left-40 w-[500px] h-[500px] rounded-full bg-violet-700/15 blur-3xl" />
+        <div className="absolute bottom-0 -right-40 w-[500px] h-[500px] rounded-full bg-cyan-600/15 blur-3xl" />
+      </div>
+
+      <div className="max-w-xl mx-auto relative z-10">
+        <div className="mb-8">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-3 py-1 text-xs font-semibold text-gray-300 mb-2 backdrop-blur-sm">
+            <span>👤</span> Account Settings
+          </div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Passenger Profile</h1>
+          <p className="text-gray-400 mt-1">Manage your account and preferences</p>
+        </div>
 
         {!editing ? (
-          <div className="bg-white rounded-2xl shadow p-8 space-y-4">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold">
+          <div className="bg-gray-900/60 backdrop-blur-md rounded-3xl border border-white/10 shadow-2xl p-8 space-y-6">
+            <div className="flex items-center gap-4 border-b border-white/10 pb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-cyan-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg shadow-violet-700/30">
                 {profile?.name?.[0]?.toUpperCase() || "P"}
               </div>
               <div>
-                <p className="text-xl font-bold">{profile?.name || "Passenger"}</p>
-                <p className="text-gray-500">{profile?.email || "—"}</p>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-black text-white font-medium inline-block mt-1">
+                <p className="text-xl font-bold text-white">{profile?.name || "Passenger"}</p>
+                <p className="text-gray-400 text-sm">{profile?.email || "—"}</p>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-medium inline-block mt-1">
                   Passenger #{profile?.id || "—"}
                 </span>
               </div>
@@ -163,32 +175,32 @@ export default function PassengerProfile() {
 
             <button
               onClick={() => setEditing(true)}
-              className="w-full mt-6 bg-black text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition"
+              className="w-full mt-6 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold py-3.5 rounded-2xl hover:opacity-90 transition shadow-lg shadow-violet-700/30"
             >
               Edit Profile
             </button>
           </div>
         ) : (
-          <form onSubmit={handleUpdate} className="bg-white rounded-2xl shadow p-8 space-y-5">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h2 className="text-xl font-bold">Edit Profile Details</h2>
+          <form onSubmit={handleUpdate} className="bg-gray-900/60 backdrop-blur-md rounded-3xl border border-white/10 shadow-2xl p-8 space-y-5">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <h2 className="text-xl font-bold text-white">Edit Profile Details</h2>
               <span className="text-xs text-gray-400">DTO: PassengerUpdateDto</span>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1">Full Name</label>
+              <label className="block text-sm font-semibold text-gray-300 mb-1.5">Full Name</label>
               <input
                 type="text"
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-black/60 border border-white/15 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="Enter your name"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1">Rating (0.00 - 5.00)</label>
+              <label className="block text-sm font-semibold text-gray-300 mb-1.5">Rating (0.00 - 5.00)</label>
               <input
                 type="number"
                 step="0.1"
@@ -196,26 +208,26 @@ export default function PassengerProfile() {
                 max="5"
                 value={form.rating}
                 onChange={(e) => setForm({ ...form, rating: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full bg-black/60 border border-white/15 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="e.g. 4.8"
               />
             </div>
 
             {/* Home Location */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-800">Home Location</span>
+                <span className="text-sm font-semibold text-white">Home Location</span>
                 <button
                   type="button"
                   onClick={() => handleUseCurrentLocation("home")}
-                  className="text-xs bg-gray-200 hover:bg-gray-300 px-2.5 py-1 rounded font-medium transition"
+                  className="text-xs bg-white/10 hover:bg-white/20 text-cyan-300 border border-white/15 px-3 py-1 rounded-lg font-medium transition"
                 >
                   📍 Use Current GPS
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Latitude</label>
+                  <label className="block text-xs text-gray-400 mb-1">Latitude</label>
                   <input
                     type="number"
                     step="any"
@@ -226,12 +238,12 @@ export default function PassengerProfile() {
                         home: { ...form.home, latitude: e.target.value },
                       })
                     }
-                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full bg-black/60 border border-white/15 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     placeholder="e.g. 22.3072"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Longitude</label>
+                  <label className="block text-xs text-gray-400 mb-1">Longitude</label>
                   <input
                     type="number"
                     step="any"
@@ -242,7 +254,7 @@ export default function PassengerProfile() {
                         home: { ...form.home, longitude: e.target.value },
                       })
                     }
-                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full bg-black/60 border border-white/15 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     placeholder="e.g. 73.1812"
                   />
                 </div>
@@ -250,20 +262,20 @@ export default function PassengerProfile() {
             </div>
 
             {/* Last Known Location */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-800">Last Known Location</span>
+                <span className="text-sm font-semibold text-white">Last Known Location</span>
                 <button
                   type="button"
                   onClick={() => handleUseCurrentLocation("lastKnownLocation")}
-                  className="text-xs bg-gray-200 hover:bg-gray-300 px-2.5 py-1 rounded font-medium transition"
+                  className="text-xs bg-white/10 hover:bg-white/20 text-cyan-300 border border-white/15 px-3 py-1 rounded-lg font-medium transition"
                 >
                   📍 Use Current GPS
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Latitude</label>
+                  <label className="block text-xs text-gray-400 mb-1">Latitude</label>
                   <input
                     type="number"
                     step="any"
@@ -274,12 +286,12 @@ export default function PassengerProfile() {
                         lastKnownLocation: { ...form.lastKnownLocation, latitude: e.target.value },
                       })
                     }
-                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full bg-black/60 border border-white/15 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     placeholder="e.g. 22.3072"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Longitude</label>
+                  <label className="block text-xs text-gray-400 mb-1">Longitude</label>
                   <input
                     type="number"
                     step="any"
@@ -290,7 +302,7 @@ export default function PassengerProfile() {
                         lastKnownLocation: { ...form.lastKnownLocation, longitude: e.target.value },
                       })
                     }
-                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full bg-black/60 border border-white/15 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     placeholder="e.g. 73.1812"
                   />
                 </div>
@@ -300,14 +312,14 @@ export default function PassengerProfile() {
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"
-                className="flex-1 bg-black text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition"
+                className="flex-1 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold py-3.5 rounded-2xl hover:opacity-90 transition shadow-lg shadow-violet-700/30"
               >
                 Save Changes
               </button>
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="flex-1 bg-gray-100 text-black font-bold py-3 rounded-xl hover:bg-gray-200 transition"
+                className="flex-1 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-bold py-3.5 rounded-2xl transition"
               >
                 Cancel
               </button>
@@ -321,9 +333,9 @@ export default function PassengerProfile() {
 
 function InfoRow({ label, value }) {
   return (
-    <div className="flex justify-between py-3 border-b border-gray-100 items-center">
-      <span className="text-gray-500 text-sm">{label}</span>
-      <span className="font-semibold text-sm text-gray-900">{value || "—"}</span>
+    <div className="flex justify-between py-3 border-b border-white/5 items-center">
+      <span className="text-gray-400 text-sm">{label}</span>
+      <span className="font-semibold text-sm text-gray-100">{value || "—"}</span>
     </div>
   );
 }

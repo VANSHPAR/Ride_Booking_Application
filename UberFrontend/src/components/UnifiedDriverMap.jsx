@@ -19,24 +19,24 @@ L.Icon.Default.mergeOptions({
   shadowUrl:     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// Custom stylish markers matching UnifiedRideMap
+// Custom stylish markers matching dark neon aesthetics
 const createDivIcon = (emoji, bgClass, label) =>
   new L.DivIcon({
     html: `
       <div style="display:flex; flex-direction:column; align-items:center; transform: translate(-50%, -100%);">
-        <div style="background:${bgClass}; color:white; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2.5px solid white; font-size:19px;">
+        <div style="background:${bgClass}; color:white; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 2.5px solid rgba(255,255,255,0.8); font-size:18px;">
           ${emoji}
         </div>
-        ${label ? `<span style="background:#111; color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; margin-top:2px; box-shadow:0 2px 4px rgba(0,0,0,0.2); white-space:nowrap;">${label}</span>` : ""}
+        ${label ? `<span style="background:rgba(10,10,15,0.9); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:6px; margin-top:3px; border:1px solid rgba(255,255,255,0.2); box-shadow:0 2px 6px rgba(0,0,0,0.5); white-space:nowrap;">${label}</span>` : ""}
       </div>
     `,
     className: "custom-map-icon",
     iconSize: [0, 0],
   });
 
-const driverIcon    = createDivIcon("🚗", "#f59e0b", "You (Driver)");
-const passengerIcon = createDivIcon("📍", "#10b981", "Passenger Pickup");
-const destinationIcon = createDivIcon("🏁", "#000000", "Destination");
+const driverIcon    = createDivIcon("🛞", "linear-gradient(135deg, #f59e0b, #ef4444)", "You (Driver)");
+const passengerIcon = createDivIcon("📍", "linear-gradient(135deg, #10b981, #06b6d4)", "Passenger Pickup");
+const destinationIcon = createDivIcon("🏁", "linear-gradient(135deg, #8b5cf6, #ec4899)", "Destination");
 
 // Auto-adjust view to fit driver position and any active request points
 function DriverMapBoundsController({ location, rideTarget }) {
@@ -58,71 +58,44 @@ function DriverMapBoundsController({ location, rideTarget }) {
       map.setView(points[0], 15, { animate: true });
     } else if (points.length > 1) {
       const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [50, 50], animate: true, maxZoom: 16 });
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: true });
     }
   }, [location, rideTarget, map]);
 
   return null;
 }
 
-export default function UnifiedDriverMap({
-  location,
-  online,
-  rideRequest,
-  onRefreshGps,
-}) {
-  const defaultCenter = [22.3072, 73.1812];
-  const center = location
+export default function UnifiedDriverMap({ location, rideTarget }) {
+  const center = location?.latitude
     ? [location.latitude, location.longitude]
-    : defaultCenter;
+    : [22.3072, 73.1812];
 
-  const routePolyline =
-    location && rideRequest?.startLocation
+  const hasPickup =
+    rideTarget?.startLocation?.latitude && rideTarget?.startLocation?.longitude;
+  const hasDropoff =
+    rideTarget?.endLocation?.latitude && rideTarget?.endLocation?.longitude;
+
+  const routePositions =
+    location?.latitude && hasPickup
       ? [
           [location.latitude, location.longitude],
-          [rideRequest.startLocation.latitude, rideRequest.startLocation.longitude],
+          [rideTarget.startLocation.latitude, rideTarget.startLocation.longitude],
         ]
       : [];
 
   return (
-    <div className="relative w-full h-[580px] rounded-3xl overflow-hidden shadow-xl border border-gray-200">
-      {/* Floating Top Status Bar */}
-      <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-wrap items-center justify-between gap-3 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-lg border border-gray-100">
-        <div className="flex items-center gap-2.5">
-          <span
-            className={`w-3 h-3 rounded-full ${
-              online ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
-            }`}
-          />
-          <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">
-            {online ? "Online & Broadcasting GPS" : "Offline"}
-          </span>
-          {location && (
-            <span className="text-[11px] font-mono text-gray-500 hidden sm:inline bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200">
-              📍 {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {onRefreshGps && (
-            <button
-              type="button"
-              onClick={onRefreshGps}
-              className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm"
-              title="Sync GPS location"
-            >
-              <span>📡</span>
-              <span>Sync GPS</span>
-            </button>
-          )}
-        </div>
+    <div className="relative w-full h-[580px] rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+      {/* Floating status pill overlay */}
+      <div className="absolute top-4 left-4 z-[1000] bg-gray-950/80 backdrop-blur-md px-4 py-2 rounded-2xl shadow-xl border border-white/10 flex items-center gap-2">
+        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+        <span className="text-xs font-bold text-gray-200">
+          {rideTarget ? "🎯 Navigating Active Assignment" : "📡 Live GPS Broadcast Radar"}
+        </span>
       </div>
 
-      {/* Map Container */}
       <MapContainer
         center={center}
-        zoom={15}
+        zoom={14}
         style={{ height: "100%", width: "100%" }}
         zoomControl={false}
       >
@@ -131,109 +104,94 @@ export default function UnifiedDriverMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <DriverMapBoundsController location={location} rideTarget={rideRequest} />
+        <DriverMapBoundsController location={location} rideTarget={rideTarget} />
 
-        {/* Driver's Live Location Marker */}
-        {location && (
-          <Marker
-            position={[location.latitude, location.longitude]}
-            icon={driverIcon}
-          >
-            <Popup>
-              <div className="text-xs p-1">
-                <p className="font-bold text-amber-800 text-sm">🚗 Your Cab Location</p>
-                <p className="text-gray-600 mt-1">
-                  {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
-                </p>
-                <p className="text-emerald-700 font-semibold mt-1">
-                  Status: {online ? "Online (Broadcasting)" : "Offline"}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
+        {/* Driver marker */}
+        {location?.latitude && (
+          <>
+            <Marker
+              position={[location.latitude, location.longitude]}
+              icon={driverIcon}
+            >
+              <Popup>
+                <div className="text-xs p-1">
+                  <p className="font-bold text-amber-600 text-sm">🛞 Your Location</p>
+                  <p className="text-gray-600 mt-0.5">
+                    {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+
+            {/* Broadcast pulse circle */}
+            <Circle
+              center={[location.latitude, location.longitude]}
+              radius={500}
+              pathOptions={{
+                color: "#06b6d4",
+                fillColor: "#06b6d4",
+                fillOpacity: 0.12,
+                weight: 1.5,
+              }}
+            />
+          </>
         )}
 
-        {/* Search / Service Range Radius Circle */}
-        {location && (
-          <Circle
-            center={[location.latitude, location.longitude]}
-            radius={online ? 5000 : 1000}
-            pathOptions={{
-              color: online ? "#10b981" : "#9ca3af",
-              fillColor: online ? "#10b981" : "#9ca3af",
-              fillOpacity: online ? 0.08 : 0.03,
-              weight: 1.5,
-              dashArray: "6, 6",
-            }}
-          />
-        )}
-
-        {/* Passenger Pickup Point (if incoming or accepted ride request has coordinates) */}
-        {rideRequest?.startLocation && (
+        {/* Passenger Pickup marker */}
+        {hasPickup && (
           <Marker
             position={[
-              rideRequest.startLocation.latitude,
-              rideRequest.startLocation.longitude,
+              rideTarget.startLocation.latitude,
+              rideTarget.startLocation.longitude,
             ]}
             icon={passengerIcon}
           >
             <Popup>
               <div className="text-xs p-1">
-                <p className="font-bold text-emerald-700 text-sm">📍 Passenger Pickup</p>
-                <p className="text-gray-600">Booking #{rideRequest.bookingId}</p>
+                <p className="font-bold text-cyan-600 text-sm">📍 Passenger Pickup</p>
+                <p className="text-gray-600 mt-0.5">
+                  {rideTarget.startLocation.latitude.toFixed(5)},{" "}
+                  {rideTarget.startLocation.longitude.toFixed(5)}
+                </p>
               </div>
             </Popup>
           </Marker>
         )}
 
-        {/* Drop-off Point (if available) */}
-        {rideRequest?.endLocation && (
+        {/* Passenger Destination marker */}
+        {hasDropoff && (
           <Marker
             position={[
-              rideRequest.endLocation.latitude,
-              rideRequest.endLocation.longitude,
+              rideTarget.endLocation.latitude,
+              rideTarget.endLocation.longitude,
             ]}
             icon={destinationIcon}
           >
             <Popup>
               <div className="text-xs p-1">
-                <p className="font-bold text-gray-900 text-sm">🏁 Drop-off Destination</p>
+                <p className="font-bold text-violet-700 text-sm">🏁 Trip Destination</p>
+                <p className="text-gray-600 mt-0.5">
+                  {rideTarget.endLocation.latitude.toFixed(5)},{" "}
+                  {rideTarget.endLocation.longitude.toFixed(5)}
+                </p>
               </div>
             </Popup>
           </Marker>
         )}
 
-        {/* Route Line from Driver to Passenger Pickup */}
-        {routePolyline.length === 2 && (
+        {/* Polyline route from driver to passenger pickup */}
+        {routePositions.length === 2 && (
           <Polyline
-            positions={routePolyline}
+            positions={routePositions}
             pathOptions={{
-              color: "#f59e0b",
+              color: "#06b6d4",
               weight: 4,
-              opacity: 0.8,
+              opacity: 0.85,
               dashArray: "8, 8",
             }}
           />
         )}
       </MapContainer>
-
-      {/* Floating Legend at Bottom */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-4 text-xs font-semibold">
-        <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
-          <span>Your Cab</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
-          <span>{online ? "5km Service Area" : "Coverage Range"}</span>
-        </div>
-        {rideRequest?.startLocation && (
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-emerald-700 inline-block" />
-            <span>Passenger Pickup</span>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

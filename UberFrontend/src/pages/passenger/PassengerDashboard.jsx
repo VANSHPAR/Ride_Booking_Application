@@ -209,23 +209,37 @@ export default function PassengerDashboard() {
   const isCancelled = booking?.bookingStatus === "CANCELLED";
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-black text-gray-100 py-8 px-4 sm:px-6 relative overflow-hidden">
+      {/* Background ambient glowing blobs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 -left-40 w-[500px] h-[500px] rounded-full bg-violet-700/15 blur-3xl" />
+        <div className="absolute bottom-0 -right-40 w-[500px] h-[500px] rounded-full bg-cyan-600/15 blur-3xl" />
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-950 tracking-tight">
-              Book a Ride, {user?.name || "Passenger"} 👋
+            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-3 py-1 text-xs font-semibold text-gray-300 mb-2 backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Passenger Cockpit
+            </div>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">
+              Book a Ride,{" "}
+              <span className="bg-gradient-to-r from-violet-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+                {user?.name || "Passenger"}
+              </span>{" "}
+              👋
             </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              Select your pickup and drop-off points directly on the map.
+            <p className="text-gray-400 text-sm mt-1">
+              Select your pickup and drop-off points directly on the interactive map.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={handleGeolocate}
-              className="bg-white hover:bg-gray-100 text-gray-900 border border-gray-300 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm flex items-center gap-2"
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold px-4 py-2.5 rounded-2xl text-sm transition backdrop-blur-sm shadow-md flex items-center gap-2 hover:scale-105"
             >
               <span>📡</span>
               <span>Use Current GPS</span>
@@ -234,34 +248,34 @@ export default function PassengerDashboard() {
         </div>
 
         {step === "booked" ? (
-          <div className="bg-white rounded-3xl shadow-xl p-10 max-w-xl mx-auto text-center border border-gray-100 animate-fade-in space-y-6">
+          <div className="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl p-10 max-w-xl mx-auto text-center border border-white/10 animate-fade-in space-y-6">
             <div className="text-6xl mb-2">
-              {isScheduled ? "🎉" : isCancelled ? "🚫" : "🚗"}
+              {isScheduled ? "🎉" : isCancelled ? "🚫" : "🌊"}
             </div>
 
             <div>
-              <h2 className="text-3xl font-extrabold text-gray-900">
+              <h2 className="text-3xl font-extrabold text-white">
                 {isScheduled
                   ? "Ride Confirmed & Scheduled!"
                   : isCancelled
                   ? "Ride Cancelled"
                   : "Ride Requested!"}
               </h2>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="text-gray-400 text-sm mt-1">
                 Booking Reference:{" "}
-                <span className="font-mono font-bold text-gray-900">#{booking?.bookingId}</span>
+                <span className="font-mono font-bold text-cyan-400">#{booking?.bookingId}</span>
               </p>
             </div>
 
             {/* Live Status Badge */}
             <div className="inline-flex items-center gap-2">
               <span
-                className={`px-5 py-2 rounded-full font-extrabold text-sm tracking-wide shadow-sm ${
+                className={`px-5 py-2 rounded-full font-extrabold text-sm tracking-wide shadow-md ${
                   isScheduled
-                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
                     : isCancelled
-                    ? "bg-red-100 text-red-800 border border-red-300"
-                    : "bg-amber-100 text-amber-800 border border-amber-300 animate-pulse"
+                    ? "bg-red-500/20 text-red-300 border border-red-500/40"
+                    : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 animate-pulse"
                 }`}
               >
                 ● Status: {booking?.bookingStatus || "ASSIGNING_DRIVER"}
@@ -270,20 +284,20 @@ export default function PassengerDashboard() {
 
             {/* Assigned Driver Details Card if Scheduled */}
             {isScheduled && (
-              <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-5 text-left space-y-2">
-                <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
-                  <span className="font-bold text-emerald-950 text-sm flex items-center gap-1.5">
-                    <span>🚖</span> Assigned Driver
+              <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-5 text-left space-y-2 backdrop-blur-sm">
+                <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                  <span className="font-bold text-emerald-300 text-sm flex items-center gap-1.5">
+                    <span>🛞</span> Assigned Driver
                   </span>
-                  <span className="font-mono font-extrabold text-emerald-800 bg-white px-3 py-0.5 rounded-full border border-emerald-300 text-xs">
+                  <span className="font-mono font-extrabold text-emerald-300 bg-emerald-900/60 px-3 py-0.5 rounded-full border border-emerald-500/40 text-xs">
                     Driver #{booking?.driverId || "Assigned"}
                   </span>
                 </div>
-                <p className="text-xs text-emerald-900">
+                <p className="text-xs text-gray-300">
                   Your driver has accepted your ride request and is heading to your pickup location.
                 </p>
                 {booking?.startLocation && (
-                  <div className="text-xs text-emerald-800 pt-1 flex justify-between">
+                  <div className="text-xs text-emerald-300 pt-1 flex justify-between">
                     <span>📍 Pickup Point:</span>
                     <span className="font-mono">
                       {booking.startLocation.latitude?.toFixed(4)}, {booking.startLocation.longitude?.toFixed(4)}
@@ -294,7 +308,7 @@ export default function PassengerDashboard() {
             )}
 
             {!isScheduled && !isCancelled && (
-              <p className="text-gray-600 text-xs leading-relaxed max-w-md mx-auto">
+              <p className="text-gray-400 text-xs leading-relaxed max-w-md mx-auto">
                 We have notified nearby drivers. Your screen will automatically update to <strong>SCHEDULED</strong> the moment a driver accepts.
               </p>
             )}
@@ -307,7 +321,7 @@ export default function PassengerDashboard() {
                     type="button"
                     disabled={refreshing}
                     onClick={() => refreshBookingStatus(true)}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold px-6 py-3 rounded-2xl transition text-sm flex items-center justify-center gap-2"
+                    className="bg-white/10 hover:bg-white/20 text-white font-bold px-6 py-3 rounded-2xl transition text-sm flex items-center justify-center gap-2 border border-white/15"
                   >
                     <span>🔄</span>
                     <span>{refreshing ? "Checking..." : "Refresh Status"}</span>
@@ -317,7 +331,7 @@ export default function PassengerDashboard() {
                     type="button"
                     disabled={cancelling}
                     onClick={handleCancelBooking}
-                    className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold px-6 py-3 rounded-2xl transition text-sm flex items-center justify-center gap-2"
+                    className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 font-bold px-6 py-3 rounded-2xl transition text-sm flex items-center justify-center gap-2"
                   >
                     <span>✕</span>
                     <span>{cancelling ? "Cancelling..." : "Cancel Ride"}</span>
@@ -335,7 +349,7 @@ export default function PassengerDashboard() {
                     setPickup(null);
                     setDropoff(null);
                   }}
-                  className="bg-black text-white px-8 py-3.5 rounded-2xl hover:bg-gray-800 transition font-bold text-sm shadow-md"
+                  className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white px-8 py-3.5 rounded-2xl hover:opacity-90 transition font-bold text-sm shadow-lg shadow-violet-700/30"
                 >
                   Book Another Ride
                 </button>
@@ -349,29 +363,29 @@ export default function PassengerDashboard() {
               {/* Pickup Location Card */}
               <div
                 onClick={() => setActiveMapMode("pickup")}
-                className={`cursor-pointer rounded-2xl p-5 transition border-2 ${
+                className={`cursor-pointer rounded-2xl p-5 transition border backdrop-blur-md ${
                   activeMapMode === "pickup"
-                    ? "bg-white border-emerald-500 shadow-md ring-2 ring-emerald-100"
-                    : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
+                    ? "bg-gray-900/90 border-cyan-400 shadow-lg shadow-cyan-500/20 ring-1 ring-cyan-400"
+                    : "bg-gray-900/50 border-white/10 hover:border-white/25"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">
+                    <span className="w-6 h-6 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 text-white flex items-center justify-center text-xs font-bold">
                       A
                     </span>
-                    <h3 className="font-bold text-gray-900 text-base">Pickup Location</h3>
+                    <h3 className="font-bold text-white text-base">Pickup Location</h3>
                   </div>
                   {activeMapMode === "pickup" && (
-                    <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] font-bold text-cyan-400 bg-cyan-500/20 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
                       Selecting on map...
                     </span>
                   )}
                 </div>
 
                 {pickup ? (
-                  <div className="flex items-center justify-between bg-emerald-50/60 p-3 rounded-xl">
-                    <p className="text-xs font-mono font-medium text-emerald-900">
+                  <div className="flex items-center justify-between bg-white/5 border border-white/10 p-3 rounded-xl">
+                    <p className="text-xs font-mono font-medium text-cyan-300">
                       📍 {pickup.latitude.toFixed(5)}, {pickup.longitude.toFixed(5)}
                     </p>
                     <button
@@ -380,14 +394,14 @@ export default function PassengerDashboard() {
                         e.stopPropagation();
                         setPickup(null);
                       }}
-                      className="text-xs text-red-600 hover:underline font-semibold"
+                      className="text-xs text-red-400 hover:text-red-300 font-semibold"
                     >
                       Clear
                     </button>
                   </div>
                 ) : (
                   <p className="text-xs text-gray-400">
-                    Click anywhere on the map on the right to set your pickup point.
+                    Click anywhere on the map to set your pickup point.
                   </p>
                 )}
               </div>
@@ -395,29 +409,29 @@ export default function PassengerDashboard() {
               {/* Drop-off Location Card */}
               <div
                 onClick={() => setActiveMapMode("dropoff")}
-                className={`cursor-pointer rounded-2xl p-5 transition border-2 ${
+                className={`cursor-pointer rounded-2xl p-5 transition border backdrop-blur-md ${
                   activeMapMode === "dropoff"
-                    ? "bg-white border-black shadow-md ring-2 ring-gray-100"
-                    : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
+                    ? "bg-gray-900/90 border-violet-400 shadow-lg shadow-violet-500/20 ring-1 ring-violet-400"
+                    : "bg-gray-900/50 border-white/10 hover:border-white/25"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold">
+                    <span className="w-6 h-6 rounded-full bg-gradient-to-r from-violet-500 to-pink-500 text-white flex items-center justify-center text-xs font-bold">
                       B
                     </span>
-                    <h3 className="font-bold text-gray-900 text-base">Drop-off Location</h3>
+                    <h3 className="font-bold text-white text-base">Drop-off Location</h3>
                   </div>
                   {activeMapMode === "dropoff" && (
-                    <span className="text-[11px] font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] font-bold text-violet-400 bg-violet-500/20 px-2.5 py-0.5 rounded-full border border-violet-500/30">
                       Selecting on map...
                     </span>
                   )}
                 </div>
 
                 {dropoff ? (
-                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
-                    <p className="text-xs font-mono font-medium text-gray-900">
+                  <div className="flex items-center justify-between bg-white/5 border border-white/10 p-3 rounded-xl">
+                    <p className="text-xs font-mono font-medium text-violet-300">
                       🏁 {dropoff.latitude.toFixed(5)}, {dropoff.longitude.toFixed(5)}
                     </p>
                     <button
@@ -426,34 +440,34 @@ export default function PassengerDashboard() {
                         e.stopPropagation();
                         setDropoff(null);
                       }}
-                      className="text-xs text-red-600 hover:underline font-semibold"
+                      className="text-xs text-red-400 hover:text-red-300 font-semibold"
                     >
                       Clear
                     </button>
                   </div>
                 ) : (
                   <p className="text-xs text-gray-400">
-                    Click anywhere on the map on the right to set your destination.
+                    Click anywhere on the map to set your destination.
                   </p>
                 )}
               </div>
 
               {/* Trip Estimate Summary */}
               {tripDistance !== null && (
-                <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-3">
+                <div className="bg-gray-900/60 backdrop-blur-md rounded-2xl p-5 border border-white/10 space-y-3 shadow-lg">
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                     Ride Summary
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-3 rounded-xl">
-                      <span className="text-xs text-gray-500 block">Est. Distance</span>
-                      <span className="text-lg font-extrabold text-gray-900">
+                    <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
+                      <span className="text-xs text-gray-400 block">Est. Distance</span>
+                      <span className="text-lg font-extrabold text-white">
                         {tripDistance.toFixed(2)} km
                       </span>
                     </div>
-                    <div className="bg-gray-50 p-3 rounded-xl">
-                      <span className="text-xs text-gray-500 block">Est. Fare</span>
-                      <span className="text-lg font-extrabold text-emerald-700">
+                    <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
+                      <span className="text-xs text-gray-400 block">Est. Fare</span>
+                      <span className="text-lg font-extrabold text-emerald-400">
                         ₹{estimatedFare}
                       </span>
                     </div>
@@ -467,7 +481,7 @@ export default function PassengerDashboard() {
                   type="button"
                   onClick={handleFindDrivers}
                   disabled={!pickup || loading}
-                  className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 px-6 rounded-2xl transition disabled:opacity-40 shadow-sm flex items-center justify-center gap-2"
+                  className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold py-3.5 px-6 rounded-2xl transition disabled:opacity-40 backdrop-blur-sm flex items-center justify-center gap-2 hover:scale-[1.02]"
                 >
                   <span>🔍</span>
                   <span>{loading ? "Searching Nearby Drivers..." : "Find Nearby Drivers"}</span>
@@ -477,7 +491,7 @@ export default function PassengerDashboard() {
                   type="button"
                   onClick={handleBook}
                   disabled={!pickup || loading}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-2xl transition disabled:opacity-40 shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 text-base"
+                  className="w-full bg-gradient-to-r from-violet-600 via-cyan-600 to-emerald-600 hover:opacity-90 text-white font-bold py-3.5 px-6 rounded-2xl transition disabled:opacity-40 shadow-xl shadow-cyan-600/25 flex items-center justify-center gap-2 text-base hover:scale-[1.02]"
                 >
                   <span>⚡</span>
                   <span>Confirm & Book Ride</span>
@@ -486,13 +500,13 @@ export default function PassengerDashboard() {
 
               {/* Nearby Drivers list */}
               {drivers.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-3">
+                <div className="bg-gray-900/60 backdrop-blur-md rounded-2xl border border-white/10 p-5 space-y-3 shadow-lg">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                      <span>🚗</span>
+                    <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                      <span>🛞</span>
                       <span>{drivers.length} Drivers Found in Range</span>
                     </h4>
-                    <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold px-2.5 py-0.5 rounded-full">
                       5 km range
                     </span>
                   </div>
@@ -501,19 +515,19 @@ export default function PassengerDashboard() {
                     {drivers.map((d, i) => (
                       <div
                         key={d.driverId || i}
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition text-xs"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition text-xs"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-base">🚖</span>
+                          <span className="text-base">🛞</span>
                           <div>
-                            <p className="font-bold text-gray-800">Driver #{d.driverId}</p>
+                            <p className="font-bold text-gray-200">Driver #{d.driverId}</p>
                             <p className="text-gray-400 text-[10px]">
                               {d.latitude?.toFixed(4)}, {d.longitude?.toFixed(4)}
                             </p>
                           </div>
                         </div>
                         {d.distance !== undefined && (
-                          <span className="font-bold text-emerald-700">
+                          <span className="font-bold text-cyan-400">
                             ~{d.distance.toFixed(2)} km
                           </span>
                         )}
@@ -524,7 +538,7 @@ export default function PassengerDashboard() {
               )}
             </div>
 
-            {/* Right Column: The ONE Unified Interactive Map (7 Cols) */}
+            {/* Right Column: Unified Interactive Map */}
             <div className="lg:col-span-7">
               <UnifiedRideMap
                 pickup={pickup}

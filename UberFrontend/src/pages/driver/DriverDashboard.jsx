@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 export default function DriverDashboard() {
   const { user, login } = useAuth();
 
-  // ✅ Restore online state from localStorage so navigation doesn't reset it
+  // Restore online state from localStorage
   const [online, setOnline] = useState(() => {
     return localStorage.getItem("driver_online") === "true";
   });
@@ -43,7 +43,6 @@ export default function DriverDashboard() {
       });
   }, []);
 
-  // ✅ If driver was online before navigating away, restart GPS interval on remount
   useEffect(() => {
     if (online) {
       intervalRef.current = setInterval(() => {
@@ -65,15 +64,13 @@ export default function DriverDashboard() {
     driverId: user?.id,
     enabled: online,
     onRideRequest: (data) => {
-      // If driver is already on an active accepted trip, ignore new incoming requests
       if (acceptedRide) return;
 
       setRideRequest(data);
       setCountdown(30);
       setStatus(`New ride request from Passenger #${data.passengerId}!`);
-      toast.info(`🚕 New ride request! Passenger #${data.passengerId} (Booking #${data.bookingId})`);
+      toast.info(`⚡ New ride request! Passenger #${data.passengerId} (Booking #${data.bookingId})`);
 
-      // Start 30-second countdown timer
       if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
       countdownTimerRef.current = setInterval(() => {
         setCountdown((prev) => {
@@ -88,8 +85,6 @@ export default function DriverDashboard() {
       }, 1000);
     },
     onRideAccepted: (data) => {
-      // When ANY driver accepts a ride:
-      // If this dashboard has the same bookingId displayed and it was accepted by someone else:
       if (
         currentRideRequestRef.current &&
         Number(currentRideRequestRef.current.bookingId) === Number(data?.bookingId) &&
@@ -98,97 +93,98 @@ export default function DriverDashboard() {
         if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
         setRideRequest(null);
         setStatus("Online — waiting for rides");
-        toast.info(`ℹ️ Ride #${data.bookingId} was accepted by another driver.`);
+        toast.warn(`Booking #${data?.bookingId} was accepted by another driver.`);
       }
     },
   });
 
-  const publishLocation = (lat, lng) => {
-    saveDriverLocation(user?.id || 1, lat, lng)
-      .then(() => console.log("Location updated in Redis"))
-      .catch((err) => console.error("Error updating location:", err));
-  };
-
-  const syncGps = () => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocation not supported by your browser");
-      return;
+  const publishLocation = async (lat, lng) => {
+    try {
+      await saveDriverLocation({
+        driverId: user?.id || 1,
+        latitude: lat,
+        longitude: lng,
+      });
+    } catch (err) {
+      console.warn("Could not publish location:", err);
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setLocation({ latitude: lat, longitude: lng });
-        localStorage.setItem("driver_location", JSON.stringify({ latitude: lat, longitude: lng }));
-        if (online) {
-          publishLocation(lat, lng);
-        }
-        toast.success("GPS Location updated!");
-      },
-      () => toast.error("Could not retrieve GPS location. Please enable location services.")
-    );
   };
 
   const goOnline = () => {
     if (!navigator.geolocation) {
-      toast.error("Geolocation not supported by your browser");
+      toast.error("Geolocation not supported");
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
+      (p) => {
+        const lat = p.coords.latitude;
+        const lng = p.coords.longitude;
         setLocation({ latitude: lat, longitude: lng });
-        // ✅ Persist location so it's restored on navigation return
         localStorage.setItem("driver_location", JSON.stringify({ latitude: lat, longitude: lng }));
         publishLocation(lat, lng);
+
+        intervalRef.current = setInterval(() => {
+          navigator.geolocation.getCurrentPosition((pos) => {
+            const curLat = pos.coords.latitude;
+            const curLng = pos.coords.longitude;
+            setLocation({ latitude: curLat, longitude: curLng });
+            localStorage.setItem("driver_location", JSON.stringify({ latitude: curLat, longitude: curLng }));
+            publishLocation(curLat, curLng);
+          });
+        }, 30000);
+
         setOnline(true);
-        // ✅ Persist online status — survives tab navigation
         localStorage.setItem("driver_online", "true");
         setStatus("Online — broadcasting to nearby passengers");
-        toast.success("You are now ONLINE and available for rides!");
-        // Note: GPS interval is started by the useEffect watching `online`
+        toast.success("You are now ONLINE and discoverable by passengers!");
       },
-      () => toast.error("Could not get your location. Please enable GPS permissions.")
+      () => toast.error("Could not retrieve current GPS coordinates")
     );
   };
 
-  const goOffline = () => {
+  const goOffline = async () => {
     clearInterval(intervalRef.current);
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
     setOnline(false);
-    setRideRequest(null);
-    setAcceptedRide(null);
-    setStatus("Offline");
-    // ✅ Clear persisted online state
     localStorage.removeItem("driver_online");
-    localStorage.removeItem("driver_location");
+    setRideRequest(null);
+    setStatus("Offline");
 
-    // Tell backend to remove driver from Redis so they don't show in nearby results
-    if (user?.id) {
-      removeDriverLocation(user.id)
-        .then(() => console.log("Driver removed from Redis"))
-        .catch((err) => console.error("Failed to remove driver from Redis:", err));
+    try {
+      await removeDriverLocation(user?.id || 1);
+    } catch (err) {
+      console.warn("Could not remove driver location:", err);
     }
-
-    toast.info("You are now OFFLINE");
+    toast.info("You are now OFFLINE.");
   };
 
-  useEffect(() => {
-    return () => {
-      clearInterval(intervalRef.current);
-      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-    };
-  }, []);
+  const syncGps = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation not supported");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        const lat = p.coords.latitude;
+        const lng = p.coords.longitude;
+        setLocation({ latitude: lat, longitude: lng });
+        localStorage.setItem("driver_location", JSON.stringify({ latitude: lat, longitude: lng }));
+        if (online) publishLocation(lat, lng);
+        toast.success("GPS synchronized!");
+      },
+      () => toast.error("Could not fetch GPS")
+    );
+  };
 
   const handleAccept = () => {
     if (!rideRequest) return;
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
 
+    sendRideResponse(user?.id || 1, { response: "true", bookingId: rideRequest.bookingId });
+
     const accepted = { ...rideRequest };
-    sendRideResponse(user?.id || 1, { response: "true", bookingId: accepted.bookingId });
     setAcceptedRide(accepted);
-    setRideRequest(null); // Dismiss request immediately on accept
+    setRideRequest(null);
     toast.success(`Ride #${accepted.bookingId} accepted! Booking updated to SCHEDULED.`);
     setStatus(`Assigned to Booking #${accepted.bookingId} — Head to passenger pickup point!`);
   };
@@ -198,7 +194,7 @@ export default function DriverDashboard() {
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
 
     sendRideResponse(user?.id || 1, { response: "false", bookingId: rideRequest.bookingId });
-    setRideRequest(null); // Dismiss request immediately on decline
+    setRideRequest(null);
     setStatus("Online — waiting for rides");
     toast.info("Ride request declined.");
   };
@@ -210,15 +206,29 @@ export default function DriverDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-black text-gray-100 py-8 px-4 sm:px-6 relative overflow-hidden">
+      {/* Background ambient glowing blobs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 -left-40 w-[500px] h-[500px] rounded-full bg-violet-700/15 blur-3xl" />
+        <div className="absolute bottom-0 -right-40 w-[500px] h-[500px] rounded-full bg-cyan-600/15 blur-3xl" />
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-950 tracking-tight">
-              Driver Cockpit, {user?.name || "Driver"} 🚖
+            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-3 py-1 text-xs font-semibold text-gray-300 mb-2 backdrop-blur-sm">
+              <span className={`w-2 h-2 rounded-full ${online ? "bg-emerald-400 animate-pulse" : "bg-gray-500"}`} />
+              Driver Operations
+            </div>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">
+              Driver Cockpit,{" "}
+              <span className="bg-gradient-to-r from-violet-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+                {user?.name || "Driver"}
+              </span>{" "}
+              🛞
             </h1>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-gray-400 text-sm mt-1">
               Broadcast your GPS coordinates to get matched with nearby passengers in real-time.
             </p>
           </div>
@@ -226,7 +236,7 @@ export default function DriverDashboard() {
           <div className="flex items-center gap-3">
             <button
               onClick={syncGps}
-              className="bg-white hover:bg-gray-100 text-gray-900 border border-gray-300 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm flex items-center gap-2"
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold px-4 py-2.5 rounded-2xl text-sm transition backdrop-blur-sm shadow-md flex items-center gap-2 hover:scale-105"
             >
               <span>📡</span>
               <span>Sync Current GPS</span>
@@ -238,188 +248,179 @@ export default function DriverDashboard() {
           {/* Left Column: Controls, Ride Request Modal, and Status (5 Cols) */}
           <div className="lg:col-span-5 space-y-5">
             {/* Online / Offline Control Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
+            <div className="bg-gray-900/60 backdrop-blur-md rounded-2xl border border-white/10 p-6 space-y-4 shadow-xl">
               <div className="flex justify-between items-center">
-                <h2 className="text-base font-bold text-gray-900">Broadcast Status</h2>
+                <h2 className="text-base font-bold text-white">Broadcast Status</h2>
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    online ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-600"
+                  className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                    online
+                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                      : "bg-gray-800 text-gray-400 border-white/10"
                   }`}
                 >
                   {online ? "🟢 Active & Online" : "⚫ Offline"}
                 </span>
               </div>
 
-              <p className="text-gray-500 text-xs leading-relaxed">{status}</p>
+              <p className="text-gray-400 text-xs leading-relaxed">{status}</p>
 
               {!online ? (
                 <button
                   type="button"
                   onClick={goOnline}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl transition shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 text-sm"
+                  className="w-full bg-gradient-to-r from-emerald-600 via-cyan-600 to-violet-600 hover:opacity-90 text-white font-bold py-3.5 rounded-2xl transition shadow-xl shadow-emerald-600/25 flex items-center justify-center gap-2 text-sm hover:scale-[1.02]"
                 >
-                  <span>🟢</span>
-                  <span>Go Online & Start Driving</span>
+                  <span>⚡</span>
+                  <span>Go Online (Start Broadcasting)</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={goOffline}
-                  className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-2xl transition shadow-sm flex items-center justify-center gap-2 text-sm"
+                  className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 font-bold py-3.5 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
                 >
-                  <span>⚫</span>
-                  <span>Go Offline</span>
+                  <span>⏹</span>
+                  <span>Go Offline (Stop Broadcasting)</span>
                 </button>
-              )}
-
-              {location && (
-                <div className="bg-gray-50 p-3 rounded-xl flex items-center justify-between text-xs text-gray-600">
-                  <span className="font-medium">Broadcast Coordinates:</span>
-                  <span className="font-mono font-bold text-gray-900">
-                    {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
-                  </span>
-                </div>
               )}
             </div>
 
-            {/* Live Incoming Ride Request Card */}
-            {rideRequest && (
-              <div className="bg-black text-white rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-800 animate-fade-in">
-                <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-2xl animate-bounce">🚕</span>
-                    <div>
-                      <h3 className="text-base font-bold">New Ride Request!</h3>
-                      <p className="text-xs text-emerald-400 font-semibold">Immediate Assignment</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800 font-bold">
-                      ⏱ {countdown}s
+            {/* GPS Telemetry Card */}
+            <div className="bg-gray-900/60 backdrop-blur-md rounded-2xl border border-white/10 p-6 space-y-3 shadow-xl">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Current Location Telemetry
+              </h3>
+
+              {location ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
+                    <span className="text-xs text-gray-400 block">Latitude</span>
+                    <span className="text-sm font-mono font-bold text-cyan-300">
+                      {location.latitude.toFixed(5)}
                     </span>
-                    <span className="text-xs font-mono bg-gray-800 px-2.5 py-1 rounded-full text-gray-300">
-                      #{rideRequest.bookingId}
+                  </div>
+                  <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
+                    <span className="text-xs text-gray-400 block">Longitude</span>
+                    <span className="text-sm font-mono font-bold text-cyan-300">
+                      {location.longitude.toFixed(5)}
                     </span>
                   </div>
                 </div>
+              ) : (
+                <p className="text-xs text-gray-500 italic">
+                  GPS position has not been captured yet. Click &quot;Sync Current GPS&quot; above.
+                </p>
+              )}
+            </div>
 
-                <div className="space-y-2 text-xs text-gray-300">
-                  <div className="flex justify-between py-1 border-b border-gray-900">
-                    <span>Passenger:</span>
-                    <span className="font-bold text-white">#{rideRequest.passengerId}</span>
+            {/* Active Accepted Trip Card */}
+            {acceptedRide && (
+              <div className="bg-gradient-to-br from-emerald-950/60 to-cyan-950/40 border-2 border-emerald-500/40 rounded-2xl p-6 space-y-4 shadow-2xl backdrop-blur-md">
+                <div className="flex items-center justify-between border-b border-emerald-500/30 pb-3">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Trip In Progress
+                  </span>
+                  <span className="font-mono text-xs font-bold bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                    Booking #{acceptedRide.bookingId}
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between text-gray-300">
+                    <span className="text-gray-400">Passenger ID:</span>
+                    <span className="font-bold text-white">#{acceptedRide.passengerId}</span>
+                  </div>
+                  {acceptedRide.startLocation && (
+                    <div className="flex justify-between text-gray-300">
+                      <span className="text-gray-400">Pickup:</span>
+                      <span className="font-mono text-cyan-300">
+                        {acceptedRide.startLocation.latitude?.toFixed(4)},{" "}
+                        {acceptedRide.startLocation.longitude?.toFixed(4)}
+                      </span>
+                    </div>
+                  )}
+                  {acceptedRide.endLocation && (
+                    <div className="flex justify-between text-gray-300">
+                      <span className="text-gray-400">Destination:</span>
+                      <span className="font-mono text-violet-300">
+                        {acceptedRide.endLocation.latitude?.toFixed(4)},{" "}
+                        {acceptedRide.endLocation.longitude?.toFixed(4)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCompleteTrip}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg shadow-emerald-500/30"
+                >
+                  ✓ Complete Trip &amp; Ready for Next
+                </button>
+              </div>
+            )}
+
+            {/* Incoming Real-time Ride Request Popup / Modal */}
+            {rideRequest && (
+              <div className="bg-gradient-to-br from-violet-950/80 via-gray-900/90 to-cyan-950/80 rounded-2xl border-2 border-cyan-400/80 p-6 space-y-4 shadow-2xl backdrop-blur-md animate-bounce-short">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">⚡</span>
+                    <h3 className="font-extrabold text-white text-base">
+                      Incoming Ride Match!
+                    </h3>
+                  </div>
+                  <span className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-bold text-xs px-2.5 py-1 rounded-full animate-pulse">
+                    ⏱ {countdown}s left
+                  </span>
+                </div>
+
+                <div className="space-y-2 bg-white/5 border border-white/10 p-3.5 rounded-xl text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Booking Ref:</span>
+                    <span className="font-mono font-bold text-white">#{rideRequest.bookingId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Passenger:</span>
+                    <span className="font-bold text-cyan-300">Passenger #{rideRequest.passengerId}</span>
                   </div>
                   {rideRequest.startLocation && (
-                    <div className="flex justify-between py-1 border-b border-gray-900">
-                      <span>Pickup:</span>
-                      <span className="font-mono text-emerald-400">
-                        {rideRequest.startLocation.latitude.toFixed(4)},{" "}
-                        {rideRequest.startLocation.longitude.toFixed(4)}
-                      </span>
-                    </div>
-                  )}
-                  {rideRequest.endLocation && (
-                    <div className="flex justify-between py-1 border-b border-gray-900">
-                      <span>Drop-off:</span>
-                      <span className="font-mono text-gray-300">
-                        {rideRequest.endLocation.latitude.toFixed(4)},{" "}
-                        {rideRequest.endLocation.longitude.toFixed(4)}
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Pickup GPS:</span>
+                      <span className="font-mono text-white">
+                        {rideRequest.startLocation.latitude?.toFixed(4)},{" "}
+                        {rideRequest.startLocation.longitude?.toFixed(4)}
                       </span>
                     </div>
                   )}
                 </div>
 
-                <div className="flex gap-3 pt-1">
+                <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={handleAccept}
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition text-sm shadow-md"
+                    className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-white font-extrabold py-3 rounded-xl transition shadow-lg shadow-emerald-500/30 text-xs"
                   >
-                    ✅ Accept Ride
+                    ✓ Accept Ride
                   </button>
                   <button
                     type="button"
                     onClick={handleReject}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition text-sm"
+                    className="flex-1 bg-white/10 hover:bg-white/20 text-red-300 border border-red-500/30 font-bold py-3 rounded-xl transition text-xs"
                   >
                     ✕ Decline
                   </button>
                 </div>
               </div>
             )}
-
-            {/* Active Accepted Trip Card */}
-            {acceptedRide && (
-              <div className="bg-emerald-950 text-white rounded-2xl shadow-xl p-6 space-y-4 border border-emerald-700/60 animate-fade-in">
-                <div className="flex items-center justify-between border-b border-emerald-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">🚖</span>
-                    <div>
-                      <h3 className="text-base font-bold text-white">Active Assigned Trip</h3>
-                      <p className="text-xs text-emerald-300 font-medium">Status: SCHEDULED</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-mono bg-emerald-900 px-3 py-1 rounded-full text-emerald-200 border border-emerald-700">
-                    Booking #{acceptedRide.bookingId}
-                  </span>
-                </div>
-
-                <div className="space-y-2 text-xs text-emerald-100">
-                  <div className="flex justify-between py-1 border-b border-emerald-900/60">
-                    <span className="text-emerald-300">Passenger ID:</span>
-                    <span className="font-bold text-white">#{acceptedRide.passengerId}</span>
-                  </div>
-                  {acceptedRide.startLocation && (
-                    <div className="flex justify-between py-1 border-b border-emerald-900/60">
-                      <span className="text-emerald-300">📍 Pickup Coordinates:</span>
-                      <span className="font-mono text-emerald-200 font-bold">
-                        {acceptedRide.startLocation.latitude.toFixed(4)},{" "}
-                        {acceptedRide.startLocation.longitude.toFixed(4)}
-                      </span>
-                    </div>
-                  )}
-                  {acceptedRide.endLocation && (
-                    <div className="flex justify-between py-1 border-b border-emerald-900/60">
-                      <span className="text-emerald-300">🏁 Drop-off Coordinates:</span>
-                      <span className="font-mono text-emerald-200">
-                        {acceptedRide.endLocation.latitude.toFixed(4)},{" "}
-                        {acceptedRide.endLocation.longitude.toFixed(4)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-2 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={handleCompleteTrip}
-                    className="w-full bg-white text-emerald-950 hover:bg-emerald-100 font-extrabold py-3 rounded-xl transition text-sm shadow-md"
-                  >
-                    🏁 Mark Trip Completed
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Quick Tips Box */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-2">
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                Live Driver Guidelines
-              </h4>
-              <ul className="text-xs text-gray-600 space-y-1.5 leading-relaxed">
-                <li>• Your location is automatically broadcasted to Redis every 30 seconds when online.</li>
-                <li>• Keep your browser tab active to receive STOMP WebSocket ride dispatches.</li>
-                <li>• If another driver accepts a ride first, it will automatically clear from your queue.</li>
-              </ul>
-            </div>
           </div>
 
           {/* Right Column: Unified Driver Map (7 Cols) */}
           <div className="lg:col-span-7">
             <UnifiedDriverMap
               location={location}
-              online={online}
-              rideRequest={acceptedRide || rideRequest}
-              onRefreshGps={syncGps}
+              rideTarget={acceptedRide || rideRequest}
             />
           </div>
         </div>
